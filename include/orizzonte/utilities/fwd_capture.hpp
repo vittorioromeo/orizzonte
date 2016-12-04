@@ -12,215 +12,169 @@ namespace orizzonte::impl
     using vrm::core::forward_like;
     using vrm::core::copy_if_rvalue;
 
-    template <typename T>
-    class fwd_capture_wrapper
+    namespace detail
     {
-        static_assert(!std::is_rvalue_reference<T>{});
-        static_assert(!std::is_lvalue_reference<T>{});
+        template <typename T>
+        class fwd_capture_base
+        {
+            static_assert(!std::is_rvalue_reference<T>{});
+            static_assert(!std::is_lvalue_reference<T>{});
 
+        protected:
+            T _x;
+
+            constexpr fwd_capture_base(const T& x) noexcept(
+                std::is_nothrow_copy_constructible<T>{})
+                : _x{x}
+            {
+            }
+
+            constexpr fwd_capture_base(T&& x) noexcept(
+                std::is_nothrow_move_constructible<T>{})
+                : _x{std::move(x)}
+            {
+            }
+
+        public:
+            constexpr fwd_capture_base(fwd_capture_base&& rhs) noexcept(
+                std::is_nothrow_move_constructible<T>{})
+                : _x{std::move(rhs).get()}
+            {
+            }
+
+            constexpr fwd_capture_base&
+            operator=(fwd_capture_base&& rhs) noexcept(
+                std::is_nothrow_move_assignable<T>{})
+            {
+                _x = std::move(rhs).get();
+                return *this;
+            }
+
+            constexpr fwd_capture_base(const fwd_capture_base& rhs)
+                // noexcept(std::is_nothrow_copy_constructible<T>{})
+                : _x{rhs.get()}
+            {
+            }
+
+            constexpr fwd_capture_base& operator=(const fwd_capture_base& rhs)
+            // noexcept(std::is_nothrow_copy_assignable<T>{})
+            {
+                _x = rhs.get();
+                return *this;
+            }
+
+            constexpr auto& get() & noexcept
+            {
+                return _x;
+            }
+
+            constexpr const auto& get() const & noexcept
+            {
+                return _x;
+            }
+
+            constexpr auto get() &&
+                noexcept(std::is_nothrow_move_constructible<T>{})
+            {
+                return std::move(_x);
+            }
+        };
+
+        template <typename T>
+        class fwd_capture_ref_base
+        {
+            static_assert(!std::is_rvalue_reference<T>{});
+
+        private:
+            std::reference_wrapper<T> _x;
+
+        public:
+            constexpr fwd_capture_ref_base(T& x) noexcept : _x{x}
+            {
+            }
+
+            constexpr fwd_capture_ref_base(fwd_capture_ref_base&& rhs) noexcept
+                : _x{rhs._x}
+            {
+            }
+
+            constexpr fwd_capture_ref_base& operator=(
+                fwd_capture_ref_base&& rhs) noexcept
+            {
+                _x = rhs._x;
+                return *this;
+            }
+
+            // Prevent copies.
+            fwd_capture_ref_base(const fwd_capture_ref_base&) = delete;
+            fwd_capture_ref_base& operator=(
+                const fwd_capture_ref_base&) = delete;
+
+            constexpr auto& get() & noexcept
+            {
+                return _x.get();
+            }
+
+            constexpr const auto& get() const & noexcept
+            {
+                return _x.get();
+            }
+        };
+    }
+
+    template <typename T>
+    class fwd_capture_wrapper : public detail::fwd_capture_base<T>
+    {
     private:
-        T _x;
+        using base_type = detail::fwd_capture_base<T>;
 
     public:
         constexpr fwd_capture_wrapper(const T& x) noexcept(
             std::is_nothrow_copy_constructible<T>{})
-            : _x{x}
+            : base_type{x}
         {
         }
 
         constexpr fwd_capture_wrapper(T&& x) noexcept(
             std::is_nothrow_move_constructible<T>{})
-            : _x{std::move(x)}
+            : base_type{std::move(x)}
         {
-        }
-
-        constexpr fwd_capture_wrapper(fwd_capture_wrapper&& rhs) noexcept(
-            std::is_nothrow_move_constructible<T>{})
-            : _x{std::move(rhs).get()}
-        {
-        }
-
-        constexpr fwd_capture_wrapper&
-        operator=(fwd_capture_wrapper&& rhs) noexcept(
-            std::is_nothrow_move_assignable<T>{})
-        {
-            _x = std::move(rhs).get();
-            return *this;
-        }
-
-        constexpr fwd_capture_wrapper(const fwd_capture_wrapper& rhs)
-            // noexcept(std::is_nothrow_copy_constructible<T>{})
-            : _x{rhs.get()}
-        {
-        }
-
-        constexpr fwd_capture_wrapper& operator=(const fwd_capture_wrapper& rhs)
-        // noexcept(std::is_nothrow_copy_assignable<T>{})
-        {
-            _x = rhs.get();
-            return *this;
-        }
-
-        constexpr auto& get() & noexcept
-        {
-            return _x;
-        }
-
-        constexpr const auto& get() const & noexcept
-        {
-            return _x;
-        }
-
-        constexpr auto get() &&
-            noexcept(std::is_nothrow_move_constructible<T>{})
-        {
-            return std::move(_x);
         }
     };
 
     template <typename T>
-    class fwd_capture_wrapper<T&>
+    class fwd_capture_wrapper<T&> : public detail::fwd_capture_ref_base<T>
     {
-        static_assert(!std::is_rvalue_reference<T>{});
-
     private:
-        std::reference_wrapper<T> _x;
+        using base_type = detail::fwd_capture_ref_base<T>;
 
     public:
-        constexpr fwd_capture_wrapper(T& x) noexcept : _x{x}
-        {
-        }
-
-        constexpr fwd_capture_wrapper(fwd_capture_wrapper&& rhs) noexcept
-            : _x{rhs._x}
-        {
-        }
-
-        constexpr fwd_capture_wrapper& operator=(
-            fwd_capture_wrapper&& rhs) noexcept
-        {
-            _x = rhs._x;
-            return *this;
-        }
-
-        // Prevent copies.
-        fwd_capture_wrapper(const fwd_capture_wrapper&) = delete;
-        fwd_capture_wrapper& operator=(const fwd_capture_wrapper&) = delete;
-
-        constexpr auto& get() & noexcept
-        {
-            return _x.get();
-        }
-
-        constexpr const auto& get() const & noexcept
-        {
-            return _x.get();
-        }
+        using base_type::base_type;
     };
 
     template <typename T>
-    class fwd_copy_capture_wrapper
+    class fwd_copy_capture_wrapper : public detail::fwd_capture_base<T>
     {
-        static_assert(!std::is_rvalue_reference<T>{});
-        static_assert(!std::is_lvalue_reference<T>{});
-
     private:
-        T _x;
+        using base_type = detail::fwd_capture_base<T>;
 
     public:
         constexpr fwd_copy_capture_wrapper(const T& x) noexcept(
             std::is_nothrow_copy_constructible<T>{})
-            : _x{x}
+            : base_type{x}
         {
-        }
-
-        constexpr fwd_copy_capture_wrapper(fwd_copy_capture_wrapper&&
-                rhs) noexcept(std::is_nothrow_move_constructible<T>{})
-            : _x{std::move(rhs).get()}
-        {
-        }
-
-        constexpr fwd_copy_capture_wrapper&
-        operator=(fwd_copy_capture_wrapper&& rhs) noexcept(
-            std::is_nothrow_move_assignable<T>{})
-        {
-            _x = std::move(rhs).get();
-            return *this;
-        }
-
-        constexpr fwd_copy_capture_wrapper(const fwd_copy_capture_wrapper& rhs)
-            // noexcept(std::is_nothrow_copy_constructible<T>{})
-            : _x{rhs.get()}
-        {
-        }
-
-        constexpr fwd_copy_capture_wrapper& operator=(
-            const fwd_copy_capture_wrapper& rhs)
-        // noexcept(std::is_nothrow_copy_assignable<T>{})
-        {
-            _x = rhs.get();
-            return *this;
-        }
-
-        constexpr auto& get() & noexcept
-        {
-            return _x;
-        }
-
-        constexpr const auto& get() const & noexcept
-        {
-            return _x;
-        }
-
-        constexpr auto get() &&
-            noexcept(std::is_nothrow_move_constructible<T>{})
-        {
-            return std::move(_x);
         }
     };
 
     template <typename T>
-    class fwd_copy_capture_wrapper<T&>
+    class fwd_copy_capture_wrapper<T&> : public detail::fwd_capture_ref_base<T>
     {
-        static_assert(!std::is_rvalue_reference<T>{});
-
     private:
-        std::reference_wrapper<T> _x;
+        using base_type = detail::fwd_capture_ref_base<T>;
 
     public:
-        constexpr fwd_copy_capture_wrapper(T& x) noexcept : _x{x}
-        {
-        }
-
-        constexpr fwd_copy_capture_wrapper(
-            fwd_copy_capture_wrapper&& rhs) noexcept
-            : _x{rhs._x}
-        {
-        }
-
-        constexpr fwd_copy_capture_wrapper& operator=(
-            fwd_copy_capture_wrapper&& rhs) noexcept
-        {
-            _x = rhs._x;
-            return *this;
-        }
-
-        // Prevent copies.
-        fwd_copy_capture_wrapper(const fwd_copy_capture_wrapper&) = delete;
-        fwd_copy_capture_wrapper& operator=(
-            const fwd_copy_capture_wrapper&) = delete;
-
-        constexpr auto& get() & noexcept
-        {
-            return _x.get();
-        }
-
-        constexpr const auto& get() const & noexcept
-        {
-            return _x.get();
-        }
+        using base_type::base_type;
     };
-
 
     template <typename T>
     auto fwd_capture(T&& x)
