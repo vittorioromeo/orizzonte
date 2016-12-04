@@ -13,7 +13,13 @@ list(APPEND CMAKE_MODULE_PATH
 include(vrm_cmake)
 
 # Basic project setup.
-vrm_cmake_init_project(orizzonte)
+project(orizzonte CXX)
+enable_testing()
+
+vrm_cmake_init_project_name_upper()
+vrm_cmake_init_project_source_dir()
+vrm_cmake_init_project_common_module_paths()
+
 vrm_cmake_find_extlib(vrm_pp)
 vrm_cmake_find_extlib(vrm_core)
 
@@ -35,6 +41,7 @@ include_directories("${ORIZZONTE_INC_DIR}")
 vrm_cmake_add_common_compiler_flags()
 # vrm_cmake_set_cxxstd(17)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
+set(CMAKE_CXX_COMPILER "/usr/local/bin/g++")
 
 # The `check` target runs all tests.
 vrm_check_target()
@@ -45,7 +52,7 @@ add_subdirectory(test)
 # Create header-only install target (automatically glob)
 vrm_cmake_header_only_install_glob("${ORIZZONTE_INC_DIR}" "include")
 
-# vrm_cmake_add_common_compiler_flags_suggest_attribute()
+vrm_cmake_add_common_compiler_flags_suggest_attribute()
 
 # add_executable(particles "${ORIZZONTE_SOURCE_DIR}/example/particles.cpp")
 # add_executable(pres_code "${ORIZZONTE_SOURCE_DIR}/example/pres_code.cpp")

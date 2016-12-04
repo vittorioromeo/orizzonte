@@ -6,15 +6,37 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <type_traits>
 
 #define TEST_CONST __attribute__((const))
 #define TEST_MAIN(...) int TEST_CONST main(__VA_ARGS__)
 #define TEST_LIKELY(...) __builtin_expect(!!(__VA_ARGS__), 1)
+#define TEST_IF_CONSTEXPR \
+    if                    \
+    constexpr
 
 namespace test_impl
 {
     namespace impl
     {
+        template <typename...>
+        using void_t = void;
+
+        template <typename T, typename = void>
+        struct can_print_t : std::false_type
+        {
+        };
+
+        template <typename T>
+        struct can_print_t<T, void_t<decltype(std::declval<std::ostream&>()
+                                              << std::declval<T>())>>
+            : std::true_type
+        {
+        };
+
+        template <typename T>
+        constexpr can_print_t<T> can_print{};
+
         inline auto& get_oss() noexcept
         {
             static std::ostringstream oss;
@@ -62,8 +84,10 @@ namespace test_impl
             template <typename T>
             auto& result(const T& lhs_result)
             {
-                // TODO: if contexpr(can print)
-                _s << "  RESULT: `" << lhs_result << "`\n";
+                TEST_IF_CONSTEXPR(can_print<T>)
+                {
+                    _s << "  RESULT: `" << lhs_result << "`\n";
+                }
 
                 return *this;
             }
@@ -79,9 +103,10 @@ namespace test_impl
             {
                 _s << "EXPECTED: `" << expected;
 
-                // TODO: if contexpr(can print)
-                _s << "`, which evaluates to `" << rhs_result << "`\n";
-
+                TEST_IF_CONSTEXPR(can_print<T>)
+                {
+                    _s << "`, which evaluates to `" << rhs_result << "`\n";
+                }
 
                 return *this;
             }
@@ -153,3 +178,210 @@ namespace test_impl
 #define EXPECT_LTE(lhs, rhs) EXPECT_OP(lhs, <=, rhs)
 #define EXPECT_GT(lhs, rhs) EXPECT_OP(lhs, >, rhs)
 #define EXPECT_GTE(lhs, rhs) EXPECT_OP(lhs, >=, rhs)
+
+#define SA_SAME_TYPE(T0, T1) static_assert(std::is_same<T0, T1>{})
+#define SA_TYPE_IS(a, T) SA_SAME_TYPE(decltype(a), T)
+#define SA_DECAY_TYPE_IS(a, T) SA_SAME_TYPE(std::decay_t<decltype(a)>, T)
+
+
+namespace test
+{
+    namespace impl
+    {
+        auto& ctors() noexcept
+        {
+            static int res{0};
+            return res;
+        }
+
+        auto& dtors() noexcept
+        {
+            static int res{0};
+            return res;
+        }
+
+        auto& copies() noexcept
+        {
+            static int res{0};
+            return res;
+        }
+
+        auto& moves() noexcept
+        {
+            static int res{0};
+            return res;
+        }
+
+        class expector
+        {
+        private:
+            int _ctors = -1;
+            int _dtors = -1;
+            int _copies = -1;
+            int _moves = -1;
+
+            void unset()
+            {
+                _ctors = -1;
+                _dtors = -1;
+                _copies = -1;
+                _moves = -1;
+            }
+
+        public:
+            ~expector()
+            {
+                if(_ctors != -1)
+                {
+                    EXPECT_EQ(impl::ctors(), _ctors);
+                }
+
+                if(_dtors != -1)
+                {
+                    EXPECT_EQ(impl::dtors(), _dtors);
+                }
+
+                if(_copies != -1)
+                {
+                    EXPECT_EQ(impl::copies(), _copies);
+                }
+
+                if(_moves != -1)
+                {
+                    EXPECT_EQ(impl::moves(), _moves);
+                }
+            }
+
+            auto ctors(int x) noexcept
+            {
+                auto copy = *this;
+                copy._ctors = x;
+                unset();
+                return copy;
+            }
+
+            auto dtors(int x) noexcept
+            {
+                auto copy = *this;
+                copy._dtors = x;
+                unset();
+                return copy;
+            }
+
+            auto copies(int x) noexcept
+            {
+                auto copy = *this;
+                copy._copies = x;
+                unset();
+                return copy;
+            }
+
+            auto moves(int x) noexcept
+            {
+                auto copy = *this;
+                copy._moves = x;
+                unset();
+                return copy;
+            }
+        };
+    }
+
+    template <typename TF>
+    auto expect_ops(TF&& f)
+    {
+        impl::copies() = 0;
+        impl::moves() = 0;
+
+        f();
+        return impl::expector{};
+    }
+
+    struct nocopy
+    {
+        nocopy()
+        {
+            ++(impl::ctors());
+        }
+
+        ~nocopy()
+        {
+            ++(impl::dtors());
+        }
+
+        nocopy(const nocopy&) = delete;
+        nocopy& operator=(const nocopy&) = delete;
+
+        nocopy(nocopy&&)
+        {
+            ++(impl::moves());
+        }
+
+        nocopy& operator=(nocopy&&)
+        {
+            ++(impl::moves());
+            return *this;
+        }
+    };
+
+    struct nomove
+    {
+        nomove()
+        {
+            ++(impl::ctors());
+        }
+
+        ~nomove()
+        {
+            ++(impl::dtors());
+        }
+
+        nomove(const nomove&)
+        {
+            ++(impl::copies());
+        }
+
+        nomove& operator=(const nomove&)
+        {
+            ++(impl::copies());
+            return *this;
+        }
+
+        nomove(nomove&&) = delete;
+        nomove& operator=(nomove&&) = delete;
+    };
+
+    struct anything
+    {
+        anything()
+        {
+            ++(impl::ctors());
+        }
+
+        ~anything()
+        {
+            ++(impl::dtors());
+        }
+
+        anything(const anything&)
+        {
+            ++(impl::copies());
+        }
+
+        anything& operator=(const anything&)
+        {
+            ++(impl::copies());
+            return *this;
+        }
+
+        anything(anything&&)
+        {
+            ++(impl::moves());
+        }
+
+        anything& operator=(anything&&)
+        {
+            ++(impl::moves());
+            return *this;
+        }
+    };
+}
