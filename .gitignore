@@ -1,3 +1,7 @@
+.clang-format
+.clang_complete
+.vscode
+
 # Compiled Object files
 *.slo
 *.lo
