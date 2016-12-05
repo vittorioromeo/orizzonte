@@ -179,6 +179,9 @@ namespace test_impl
 #define EXPECT_GT(lhs, rhs) EXPECT_OP(lhs, >, rhs)
 #define EXPECT_GTE(lhs, rhs) EXPECT_OP(lhs, >=, rhs)
 
+#define EXPECT_TRUE(x) EXPECT_EQ(x, true)
+#define EXPECT_FALSE(x) EXPECT_EQ(x, false)
+
 #define SA_SAME_TYPE(T0, T1) static_assert(std::is_same<T0, T1>{})
 #define SA_TYPE_IS(a, T) SA_SAME_TYPE(decltype(a), T)
 #define SA_DECAY_TYPE_IS(a, T) SA_SAME_TYPE(std::decay_t<decltype(a)>, T)
