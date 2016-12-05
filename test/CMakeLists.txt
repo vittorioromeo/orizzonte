@@ -33,7 +33,10 @@ foreach(_x IN LISTS vrm_cmake_out)
 #{
     target_compile_options(${_x} PUBLIC "-fdiagnostics-color=always")
 
+    # TODO: to utility functions in vrm_cmake? to option?
+
     get_target_property(xsrcs ${_x} SOURCES)
+
     add_executable("${_x}_asan" EXCLUDE_FROM_ALL ${xsrcs})
     vrm_cmake_add_unit_test("${_x}_asan" ${CMAKE_CURRENT_BINARY_DIR}/${_x})
     target_compile_options("${_x}_asan" PUBLIC "-fdiagnostics-color=always")
