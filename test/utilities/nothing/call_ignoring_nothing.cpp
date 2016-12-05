@@ -130,4 +130,45 @@ TEST_MAIN()
             .copies(1)
             .moves(0);
     }
+
+    {
+        auto argcnt = [](auto&&... xs) { return sizeof...(xs); };
+        EXPECT_EQ(call_ignoring_nothing(argcnt), 0);
+        EXPECT_EQ(call_ignoring_nothing(argcnt, nothing), 0);
+
+        EXPECT_EQ(call_ignoring_nothing(argcnt, 0), 1);
+        EXPECT_EQ(call_ignoring_nothing(argcnt, 0, nothing), 1);
+        EXPECT_EQ(call_ignoring_nothing(argcnt, nothing, 0), 1);
+        EXPECT_EQ(call_ignoring_nothing(argcnt, nothing, 0, nothing), 1);
+
+        EXPECT_EQ(call_ignoring_nothing(argcnt, 0, nothing, 0), 2);
+        EXPECT_EQ(call_ignoring_nothing(argcnt, nothing, 0, 0), 2);
+        EXPECT_EQ(call_ignoring_nothing(argcnt, 0, nothing, 0, nothing), 2);
+    }
+
+    {
+        int a = 0;
+        auto l = [](auto&& x) {
+            return [y = FWD_CAPTURE(x)]() mutable
+            {
+                ++(y.get());
+            };
+        };
+
+        call_ignoring_nothing(l, nothing, a, nothing)();
+        EXPECT_EQ(a, 1);
+    }
+
+    {
+        int a = 0;
+        auto l = [](auto&& x) {
+            return [y = FWD_CAPTURE(x)]() mutable
+            {
+                ++(y.get());
+            };
+        };
+
+        call_ignoring_nothing(l, nothing, int{a}, nothing)();
+        EXPECT_EQ(a, 0);
+    }
 }

@@ -2,10 +2,9 @@
 
 #include <type_traits>
 #include <functional>
-#include <tuple>
-#include <experimental/tuple>
 #include <vrm/core/utility_macros.hpp>
 #include <vrm/core/type_traits.hpp>
+#include "tuple.hpp"
 
 namespace orizzonte::impl
 {
@@ -211,7 +210,7 @@ namespace orizzonte::impl
     template <typename TF, typename TFwdCapture>
     decltype(auto) apply_fwd_capture(TF&& f, TFwdCapture&& fc)
     {
-        return std::experimental::apply(
+        return orizzonte::impl::apply(
             [&f](auto&&... xs) mutable -> decltype(
                 auto) { return f(FWD(xs).get()...); },
             FWD(fc));

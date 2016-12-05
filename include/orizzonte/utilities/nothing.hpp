@@ -2,9 +2,8 @@
 
 #include <type_traits>
 #include <utility>
-#include <tuple>
-#include <experimental/tuple>
 #include <vrm/core/type_traits/forward_like.hpp>
+#include "tuple.hpp"
 #include "fwd_capture.hpp"
 
 namespace orizzonte::impl
@@ -106,19 +105,12 @@ namespace orizzonte::impl
     template <typename TF, typename TTuple>
     decltype(auto) apply_ignore_nothing(TF&& f, TTuple&& t)
     {
-        return std::experimental::apply(
+        return orizzonte::impl::apply(
             [f = FWD_CAPTURE(f)](auto&&... xs) mutable->decltype(auto) {
                 return with_void_to_nothing(
                     forward_like<TF>(f.get()), FWD(xs)...);
             },
             FWD(t));
-    }
-
-    template <typename TF, typename TTuple>
-    decltype(auto) for_tuple(TF&& f, TTuple&& t)
-    {
-        return std::experimental::apply(
-            [&f](auto&&... xs) { (f(FWD(xs)), ...); }, FWD(t));
     }
 
     template <typename TF, typename TTuple>

@@ -31,6 +31,8 @@ vrm_cmake_generate_unit_tests_glob("${ORIZZONTE_SOURCE_DIR}/test/*.cpp")
 # Link `pthread` to every generated test.
 foreach(_x IN LISTS vrm_cmake_out)
 #{
+    target_compile_options(${_x} PUBLIC "-fdiagnostics-color=always")
+
     if(DEFINED WIN_MINGW_DEVEL)
     #{
         # target_link_libraries(${_x} boost_system boost_thread)

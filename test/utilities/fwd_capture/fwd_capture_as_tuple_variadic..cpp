@@ -1,13 +1,6 @@
 #include "../../utils.hpp"
 #include <orizzonte/utilities/fwd_capture.hpp>
 
-template <typename TF, typename TTuple>
-decltype(auto) for_tuple(TF&& f, TTuple&& t)
-{
-    return std::experimental::apply(
-        [&f](auto&&... xs) { (f(FWD(xs)), ...); }, FWD(t));
-}
-
 TEST_MAIN()
 {
     using namespace test;
