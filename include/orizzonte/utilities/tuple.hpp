@@ -2,6 +2,7 @@
 
 #include <tuple>
 #include <experimental/tuple>
+#include <vrm/core/utility_macros.hpp>
 
 namespace orizzonte::impl
 {

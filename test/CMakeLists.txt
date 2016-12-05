@@ -33,6 +33,20 @@ foreach(_x IN LISTS vrm_cmake_out)
 #{
     target_compile_options(${_x} PUBLIC "-fdiagnostics-color=always")
 
+    get_target_property(xsrcs ${_x} SOURCES)
+    add_executable("${_x}_asan" EXCLUDE_FROM_ALL ${xsrcs})
+    vrm_cmake_add_unit_test("${_x}_asan" ${CMAKE_CURRENT_BINARY_DIR}/${_x})
+    target_compile_options("${_x}_asan" PUBLIC "-fdiagnostics-color=always")
+    target_compile_options("${_x}_asan" PUBLIC "-fsanitize=address")
+    target_link_libraries("${_x}_asan" "asan")
+
+    add_executable("${_x}_tsan" EXCLUDE_FROM_ALL ${xsrcs})
+    vrm_cmake_add_unit_test("${_x}_tsan" ${CMAKE_CURRENT_BINARY_DIR}/${_x})
+    target_compile_options("${_x}_tsan" PUBLIC "-fdiagnostics-color=always")
+    target_compile_options("${_x}_tsan" PUBLIC "-fsanitize=thread")
+    target_link_libraries("${_x}_tsan" "tsan")
+
+
     if(DEFINED WIN_MINGW_DEVEL)
     #{
         # target_link_libraries(${_x} boost_system boost_thread)
