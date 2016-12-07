@@ -28,6 +28,17 @@ set_target_properties(HEADER_ONLY_TARGET3 PROPERTIES LINKER_LANGUAGE CXX)
 # Generate all the unit tests.
 vrm_cmake_generate_unit_tests_glob("${ORIZZONTE_SOURCE_DIR}/test/*.cpp")
 
+macro(augment_test x xname flags libs)
+#{
+    set(AUGMENTED_TEST_NAME "${x}_${xname}")
+    get_target_property(xsrcs ${x} SOURCES)
+
+    add_executable("${AUGMENTED_TEST_NAME}" EXCLUDE_FROM_ALL ${xsrcs})
+    vrm_cmake_add_unit_test("${AUGMENTED_TEST_NAME}" ${CMAKE_CURRENT_BINARY_DIR}/${_x})
+    target_compile_options("${AUGMENTED_TEST_NAME}" PUBLIC ${ARGN})
+#}
+endmacro()
+
 # Link `pthread` to every generated test.
 foreach(_x IN LISTS vrm_cmake_out)
 #{
@@ -37,17 +48,23 @@ foreach(_x IN LISTS vrm_cmake_out)
 
     get_target_property(xsrcs ${_x} SOURCES)
 
-    add_executable("${_x}_asan" EXCLUDE_FROM_ALL ${xsrcs})
-    vrm_cmake_add_unit_test("${_x}_asan" ${CMAKE_CURRENT_BINARY_DIR}/${_x})
-    target_compile_options("${_x}_asan" PUBLIC "-fdiagnostics-color=always")
-    target_compile_options("${_x}_asan" PUBLIC "-fsanitize=address")
-    target_link_libraries("${_x}_asan" "asan")
+    augment_test(${_x} asan "-fdiagnostics-color=always" "-fsanitize=address")
+    target_link_libraries("${AUGMENTED_TEST_NAME}" "-lasan")
 
-    add_executable("${_x}_tsan" EXCLUDE_FROM_ALL ${xsrcs})
-    vrm_cmake_add_unit_test("${_x}_tsan" ${CMAKE_CURRENT_BINARY_DIR}/${_x})
-    target_compile_options("${_x}_tsan" PUBLIC "-fdiagnostics-color=always")
-    target_compile_options("${_x}_tsan" PUBLIC "-fsanitize=thread")
-    target_link_libraries("${_x}_tsan" "tsan")
+    augment_test(${_x} tsan "-fdiagnostics-color=always" "-fsanitize=thread")
+    target_link_libraries("${AUGMENTED_TEST_NAME}" "-ltsan")
+
+    augment_test(${_x} ubsan "-fdiagnostics-color=always" "-fsanitize=undefined")
+    target_link_libraries("${AUGMENTED_TEST_NAME}" "-lubsan")
+
+    augment_test(${_x} asan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=address")
+    target_link_libraries("${AUGMENTED_TEST_NAME}" "-lasan")
+
+    augment_test(${_x} tsan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=thread")
+    target_link_libraries("${AUGMENTED_TEST_NAME}" "-ltsan")
+
+    augment_test(${_x} ubsan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=undefined")
+    target_link_libraries("${AUGMENTED_TEST_NAME}" "-lubsan")
 
 
     if(DEFINED WIN_MINGW_DEVEL)
