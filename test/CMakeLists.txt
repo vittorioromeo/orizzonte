@@ -28,7 +28,7 @@ set_target_properties(HEADER_ONLY_TARGET3 PROPERTIES LINKER_LANGUAGE CXX)
 # Generate all the unit tests.
 vrm_cmake_generate_unit_tests_glob("${ORIZZONTE_SOURCE_DIR}/test/*.cpp")
 
-macro(augment_test x xname flags libs)
+macro(augment_test x xname flags)
 #{
     set(AUGMENTED_TEST_NAME "${x}_${xname}")
     get_target_property(xsrcs ${x} SOURCES)
