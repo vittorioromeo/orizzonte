@@ -7,6 +7,7 @@ cmake_minimum_required(VERSION 3.6)
 
 # Include `vrm_cmake`.
 list(APPEND CMAKE_MODULE_PATH
+    "${CMAKE_SOURCE_DIR}/cmake/"
     "${CMAKE_SOURCE_DIR}/../vrm_cmake/cmake/"
     "${CMAKE_SOURCE_DIR}/extlibs/vrm_cmake/cmake/")
 
