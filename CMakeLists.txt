@@ -22,6 +22,7 @@ vrm_cmake_init_project_common_module_paths()
 
 vrm_cmake_find_extlib(vrm_pp)
 vrm_cmake_find_extlib(vrm_core)
+vrm_cmake_find_extlib(concurrentqueue)
 
 # TODO: improve/remove MinGW devel environment setup
 if(DEFINED WIN_MINGW_DEVEL)
@@ -31,7 +32,7 @@ if(DEFINED WIN_MINGW_DEVEL)
 endif()
 
 # TODO:
-include_directories("/home/vittorioromeo/temp/mettle/include/")
+# include_directories("/home/vittorioromeo/temp/mettle/include/")
 
 # Alias the include directory.
 set(ORIZZONTE_INC_DIR "${ORIZZONTE_SOURCE_DIR}/include/")
