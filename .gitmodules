@@ -1,0 +1,9 @@
+[submodule "extlibs/vrm_pp"]
+	path = extlibs/vrm_pp
+	url = https://github.com/SuperV1234/vrm_pp
+[submodule "extlibs/vrm_core"]
+	path = extlibs/vrm_core
+	url = https://github.com/SuperV1234/vrm_pp
+[submodule "extlibs/concurrentqueue"]
+	path = extlibs/concurrentqueue
+	url = https://github.com/cameron314/concurrentqueue
