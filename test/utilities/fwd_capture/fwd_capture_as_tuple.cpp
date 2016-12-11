@@ -40,14 +40,14 @@ TEST_MAIN()
         fwd_expect_val(nocopy{});
     })
         .copies(0)
-        .moves(1);
+        .moves(2); // TODO: can the second move be avoided?
 
     expect_ops([&] {
         // should be moved
         fwd_expect_val(anything{});
     })
         .copies(0)
-        .moves(1);
+        .moves(2); // TODO: can the second move be avoided?
 
     expect_ops([&] {
         nocopy x;

@@ -198,7 +198,7 @@ namespace orizzonte::impl
     template <typename... Ts>
     auto fwd_capture_as_tuple(Ts&&... xs)
     {
-        return std::forward_as_tuple(FWD_CAPTURE(xs)...);
+        return std::make_tuple(FWD_CAPTURE(xs)...);
     }
 
     template <typename... Ts>
