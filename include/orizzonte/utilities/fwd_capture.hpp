@@ -122,33 +122,41 @@ namespace orizzonte::impl
     }
 
     template <typename T>
-    class fwd_capture_wrapper : public detail::fwd_capture_base<T>
+    class fwd_capture_wrapper : private std::tuple<T>
     {
     private:
-        using base_type = detail::fwd_capture_base<T>;
+        using base_type = std::tuple<T>;
+
+        constexpr auto& as_tuple() noexcept
+        {
+            return static_cast<base_type&>(*this);
+        }
+
+        constexpr const auto& as_tuple() const noexcept
+        {
+            return static_cast<const base_type&>(*this);
+        }
 
     public:
-        constexpr fwd_capture_wrapper(const T& x) noexcept(
-            std::is_nothrow_copy_constructible<T>{})
-            : base_type{x}
+        template <typename TFwd>
+        constexpr fwd_capture_wrapper(TFwd&& x) : base_type(FWD(x))
         {
         }
 
-        constexpr fwd_capture_wrapper(T&& x) noexcept(
-            std::is_nothrow_move_constructible<T>{})
-            : base_type{std::move(x)}
+        constexpr auto& get() & noexcept
         {
+            return std::get<0>(as_tuple());
         }
-    };
 
-    template <typename T>
-    class fwd_capture_wrapper<T&> : public detail::fwd_capture_ref_base<T>
-    {
-    private:
-        using base_type = detail::fwd_capture_ref_base<T>;
+        constexpr const auto& get() const & noexcept
+        {
+            return std::get<0>(as_tuple());
+        }
 
-    public:
-        using base_type::base_type;
+        constexpr auto get() && noexcept
+        {
+            return std::move(std::get<0>(as_tuple()));
+        }
     };
 
     template <typename T>
@@ -210,9 +218,8 @@ namespace orizzonte::impl
     template <typename TF, typename TFwdCapture>
     decltype(auto) apply_fwd_capture(TF&& f, TFwdCapture&& fc)
     {
-        return orizzonte::impl::apply(
-            [&f](auto&&... xs) mutable -> decltype(
-                auto) { return f(FWD(xs).get()...); },
+        return orizzonte::impl::apply([&f](auto&&... xs) mutable -> decltype(
+                                          auto) { return f(FWD(xs).get()...); },
             FWD(fc));
     }
 }
