@@ -14,183 +14,89 @@ namespace orizzonte::impl
     namespace detail
     {
         template <typename T>
-        class fwd_capture_base
+        class fwd_capture_tuple : private std::tuple<T>
         {
-            static_assert(!std::is_rvalue_reference<T>{});
-            static_assert(!std::is_lvalue_reference<T>{});
+        private:
+            using decay_element_type = std::decay_t<T>;
+            using base_type = std::tuple<T>;
 
         protected:
-            T _x;
-
-            constexpr fwd_capture_base(const T& x) noexcept(
-                std::is_nothrow_copy_constructible<T>{})
-                : _x{x}
+            constexpr auto& as_tuple() noexcept
             {
+                return static_cast<base_type&>(*this);
             }
 
-            constexpr fwd_capture_base(T&& x) noexcept(
-                std::is_nothrow_move_constructible<T>{})
-                : _x{std::move(x)}
+            constexpr const auto& as_tuple() const noexcept
+            {
+                return static_cast<const base_type&>(*this);
+            }
+
+            template <typename TFwd>
+            constexpr fwd_capture_tuple(TFwd&& x)
+                noexcept(std::is_nothrow_constructible<base_type, decltype(x)>{})
+                : base_type(FWD(x))
             {
             }
 
         public:
-            constexpr fwd_capture_base(fwd_capture_base&& rhs) noexcept(
-                std::is_nothrow_move_constructible<T>{})
-                : _x{std::move(rhs).get()}
-            {
-            }
-
-            constexpr fwd_capture_base&
-            operator=(fwd_capture_base&& rhs) noexcept(
-                std::is_nothrow_move_assignable<T>{})
-            {
-                _x = std::move(rhs).get();
-                return *this;
-            }
-
-            constexpr fwd_capture_base(const fwd_capture_base& rhs)
-                // noexcept(std::is_nothrow_copy_constructible<T>{})
-                : _x{rhs.get()}
-            {
-            }
-
-            constexpr fwd_capture_base& operator=(const fwd_capture_base& rhs)
-            // noexcept(std::is_nothrow_copy_assignable<T>{})
-            {
-                _x = rhs.get();
-                return *this;
-            }
-
             constexpr auto& get() & noexcept
             {
-                return _x;
+                return std::get<0>(as_tuple());
             }
 
             constexpr const auto& get() const & noexcept
             {
-                return _x;
+                return std::get<0>(as_tuple());
             }
 
-            constexpr auto get() &&
-                noexcept(std::is_nothrow_move_constructible<T>{})
+            constexpr auto get() && noexcept(std::is_move_constructible<decay_element_type>{})
             {
-                return std::move(_x);
-            }
-        };
-
-        template <typename T>
-        class fwd_capture_ref_base
-        {
-            static_assert(!std::is_rvalue_reference<T>{});
-
-        private:
-            std::reference_wrapper<T> _x;
-
-        public:
-            constexpr fwd_capture_ref_base(T& x) noexcept : _x{x}
-            {
-            }
-
-            constexpr fwd_capture_ref_base(fwd_capture_ref_base&& rhs) noexcept
-                : _x{rhs._x}
-            {
-            }
-
-            constexpr fwd_capture_ref_base& operator=(
-                fwd_capture_ref_base&& rhs) noexcept
-            {
-                _x = rhs._x;
-                return *this;
-            }
-
-            // Prevent copies.
-            fwd_capture_ref_base(const fwd_capture_ref_base&) = delete;
-            fwd_capture_ref_base& operator=(
-                const fwd_capture_ref_base&) = delete;
-
-            constexpr auto& get() & noexcept
-            {
-                return _x.get();
-            }
-
-            constexpr const auto& get() const & noexcept
-            {
-                return _x.get();
+                return std::move(std::get<0>(as_tuple()));
             }
         };
     }
 
     template <typename T>
-    class fwd_capture_wrapper : private std::tuple<T>
+    class fwd_capture_wrapper : public detail::fwd_capture_tuple<T>
     {
     private:
-        using base_type = std::tuple<T>;
-
-        constexpr auto& as_tuple() noexcept
-        {
-            return static_cast<base_type&>(*this);
-        }
-
-        constexpr const auto& as_tuple() const noexcept
-        {
-            return static_cast<const base_type&>(*this);
-        }
+        using base_type = detail::fwd_capture_tuple<T>;
 
     public:
         template <typename TFwd>
-        constexpr fwd_capture_wrapper(TFwd&& x) : base_type(FWD(x))
-        {
-        }
-
-        constexpr auto& get() & noexcept
-        {
-            return std::get<0>(as_tuple());
-        }
-
-        constexpr const auto& get() const & noexcept
-        {
-            return std::get<0>(as_tuple());
-        }
-
-        constexpr auto get() && noexcept
-        {
-            return std::move(std::get<0>(as_tuple()));
-        }
-    };
-
-    template <typename T>
-    class fwd_copy_capture_wrapper : public detail::fwd_capture_base<T>
-    {
-    private:
-        using base_type = detail::fwd_capture_base<T>;
-
-    public:
-        constexpr fwd_copy_capture_wrapper(const T& x) noexcept(
-            std::is_nothrow_copy_constructible<T>{})
-            : base_type{x}
+        constexpr fwd_capture_wrapper(TFwd&& x)
+            noexcept(std::is_nothrow_constructible<base_type, decltype(x)>{})
+            : base_type(FWD(x))
         {
         }
     };
 
     template <typename T>
-    class fwd_copy_capture_wrapper<T&> : public detail::fwd_capture_ref_base<T>
+    class fwd_copy_capture_wrapper : public detail::fwd_capture_tuple<T>
     {
     private:
-        using base_type = detail::fwd_capture_ref_base<T>;
+        using base_type = detail::fwd_capture_tuple<T>;
 
     public:
-        using base_type::base_type;
+        // No `FWD` is intentional, to force a copy if `T` is not an lvalue reference.
+        template <typename TFwd>
+        constexpr fwd_copy_capture_wrapper(TFwd&& x)
+            noexcept(std::is_nothrow_constructible<base_type, decltype(x)>{})
+            : base_type(x)
+        {
+        }
     };
 
     template <typename T>
     auto fwd_capture(T&& x)
+        noexcept(noexcept(fwd_capture_wrapper<T>(FWD(x))))
     {
         return fwd_capture_wrapper<T>(FWD(x));
     }
 
     template <typename T>
     auto fwd_copy_capture(T&& x)
+        noexcept(noexcept(fwd_copy_capture_wrapper<T>(FWD(x))))
     {
         return fwd_copy_capture_wrapper<T>(FWD(x));
     }
