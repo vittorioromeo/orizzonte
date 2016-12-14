@@ -13,17 +13,17 @@ TEST_MAIN()
     {
         int x = 0;
         auto p = fwd_capture(x);
-        // SA_TYPE_IS(p, fwd_capture_wrapper<int&>);
+        SA_TYPE_IS(p, fwd_capture_wrapper<int&>);
     }
 
     {
         int x = 0;
         auto p = fwd_capture(std::move(x));
-        // SA_TYPE_IS(p, fwd_capture_wrapper<int>);
+        SA_TYPE_IS(p, fwd_capture_wrapper<int>);
     }
 
     {
         auto p = fwd_capture(1);
-        // SA_TYPE_IS(p, fwd_capture_wrapper<int>);
+        SA_TYPE_IS(p, fwd_capture_wrapper<int>);
     }
 }

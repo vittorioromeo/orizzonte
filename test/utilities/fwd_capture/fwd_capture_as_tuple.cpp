@@ -10,7 +10,7 @@ TEST_MAIN()
         return [fwdx = fwd_capture_as_tuple(FWD(x))]
         {
             using x_type = std::decay_t<decltype(x)>;
-            // SA_DECAY_TYPE_IS(std::get<0>(fwdx), fwd_capture_wrapper<x_type>);
+            SA_DECAY_TYPE_IS(std::get<0>(fwdx), fwd_capture_wrapper<x_type>);
         };
     };
 
@@ -18,7 +18,7 @@ TEST_MAIN()
         return [fwdx = fwd_capture_as_tuple(FWD(x))]
         {
             using x_type = std::decay_t<decltype(x)>;
-            // SA_DECAY_TYPE_IS(std::get<0>(fwdx), fwd_capture_wrapper<x_type&>);
+            SA_DECAY_TYPE_IS(std::get<0>(fwdx), fwd_capture_wrapper<x_type&>);
         };
     };
 
