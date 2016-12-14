@@ -68,6 +68,33 @@ namespace orizzonte::thread_pool::third_party
             }
         }
 
+        template <typename T>
+        constexpr auto make_method_ptr() const noexcept
+        {
+            using unref_type = std::remove_reference_t<T>;
+
+            return [](storage_type* s, fn_ptr_type, Ts... xs) {
+                return vrmc::storage_cast<unref_type>(s)->operator()(xs...);
+            };
+        }
+
+        template <typename T>
+        constexpr auto make_alloc_ptr() const noexcept
+        {
+            using unref_type = std::remove_reference_t<T>;
+
+            return [](storage_type* s, void* o) {
+                if(o)
+                {
+                    new(s) unref_type(std::move(*static_cast<unref_type*>(o)));
+                }
+                else
+                {
+                    vrmc::storage_cast<unref_type>(s)->~unref_type();
+                }
+            };
+        }
+
     public:
         fixed_function() noexcept
             : _function_ptr{nullptr}, _method_ptr{nullptr}, _alloc_ptr{nullptr}
@@ -80,7 +107,8 @@ namespace orizzonte::thread_pool::third_party
          * using move constructor. Unmovable objects are prohibited explicitly.
          */
         template <typename TFFwd>
-        fixed_function(TFFwd&& f) noexcept : fixed_function()
+        fixed_function(TFFwd&& f) noexcept
+            : _function_ptr{nullptr}, _method_ptr{make_method_ptr<TFFwd>()}, _alloc_ptr{make_alloc_ptr<TFFwd>()}
         {
             using unref_type = std::remove_reference_t<TFFwd>;
 
@@ -90,22 +118,7 @@ namespace orizzonte::thread_pool::third_party
             ORIZZONTE_S_ASSERT_M(std::is_move_constructible<unref_type>{},
                 "Should be of movable type");
 
-            _method_ptr = [](storage_type* s, fn_ptr_type, Ts... xs) {
-                return vrmc::storage_cast<unref_type>(s)->operator()(xs...);
-            };
-
-            _alloc_ptr = [](storage_type* s, void* o) {
-                if(o)
-                {
-                    new(s) unref_type(std::move(*static_cast<unref_type*>(o)));
-                }
-                else
-                {
-                    vrmc::storage_cast<unref_type>(s)->~unref_type();
-                }
-            };
-
-            _alloc_ptr(&_storage, &f);
+            new(&_storage) unref_type(std::move(*static_cast<unref_type*>(&f)));
         }
 
         /**
@@ -113,9 +126,8 @@ namespace orizzonte::thread_pool::third_party
          * member.
          */
         template <typename TFReturn, typename... TFs>
-        fixed_function(TFReturn (*f)(TFs...)) noexcept : fixed_function()
+        fixed_function(TFReturn (*f)(TFs...)) noexcept : _function_ptr{f}, _alloc_ptr{nullptr}
         {
-            _function_ptr = f;
             _method_ptr = [](storage_type*, fn_ptr_type xf, Ts... xs) {
                 return static_cast<decltype(f)>(xf)(xs...);
             };
