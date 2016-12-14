@@ -41,9 +41,15 @@ include_directories("${ORIZZONTE_INC_DIR}")
 
 # Other compiler flags.
 vrm_cmake_add_common_compiler_flags()
-# vrm_cmake_set_cxxstd(17)
+
+# TODO: improve/remove MinGW devel environment setup
+if(NOT DEFINED WIN_MINGW_DEVEL)
+#{
+    set(CMAKE_CXX_COMPILER "/usr/local/bin/g++")
+#}
+endif()
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
-set(CMAKE_CXX_COMPILER "/usr/local/bin/g++")
 
 # The `check` target runs all tests.
 vrm_check_target()

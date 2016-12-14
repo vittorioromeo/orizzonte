@@ -46,26 +46,30 @@ foreach(_x IN LISTS vrm_cmake_out)
 
     # TODO: to utility functions in vrm_cmake? to option?
 
-    get_target_property(xsrcs ${_x} SOURCES)
+    # TODO: improve/remove MinGW devel environment setup
+    if(NOT DEFINED WIN_MINGW_DEVEL)
+    #{
+        get_target_property(xsrcs ${_x} SOURCES)
 
-    augment_test(${_x} asan "-fdiagnostics-color=always" "-fsanitize=address")
-    target_link_libraries("${AUGMENTED_TEST_NAME}" "-lasan")
+        augment_test(${_x} asan "-fdiagnostics-color=always" "-fsanitize=address")
+        target_link_libraries("${AUGMENTED_TEST_NAME}" "-lasan")
 
-    augment_test(${_x} tsan "-fdiagnostics-color=always" "-fsanitize=thread")
-    target_link_libraries("${AUGMENTED_TEST_NAME}" "-ltsan")
+        augment_test(${_x} tsan "-fdiagnostics-color=always" "-fsanitize=thread")
+        target_link_libraries("${AUGMENTED_TEST_NAME}" "-ltsan")
 
-    augment_test(${_x} ubsan "-fdiagnostics-color=always" "-fsanitize=undefined")
-    target_link_libraries("${AUGMENTED_TEST_NAME}" "-lubsan")
+        augment_test(${_x} ubsan "-fdiagnostics-color=always" "-fsanitize=undefined")
+        target_link_libraries("${AUGMENTED_TEST_NAME}" "-lubsan")
 
-    augment_test(${_x} asan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=address")
-    target_link_libraries("${AUGMENTED_TEST_NAME}" "-lasan")
+        augment_test(${_x} asan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=address")
+        target_link_libraries("${AUGMENTED_TEST_NAME}" "-lasan")
 
-    augment_test(${_x} tsan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=thread")
-    target_link_libraries("${AUGMENTED_TEST_NAME}" "-ltsan")
+        augment_test(${_x} tsan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=thread")
+        target_link_libraries("${AUGMENTED_TEST_NAME}" "-ltsan")
 
-    augment_test(${_x} ubsan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=undefined")
-    target_link_libraries("${AUGMENTED_TEST_NAME}" "-lubsan")
-
+        augment_test(${_x} ubsan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=undefined")
+        target_link_libraries("${AUGMENTED_TEST_NAME}" "-lubsan")
+    #}
+    endif()
 
     if(DEFINED WIN_MINGW_DEVEL)
     #{
