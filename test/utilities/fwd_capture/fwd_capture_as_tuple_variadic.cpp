@@ -12,7 +12,7 @@ TEST_MAIN()
             for_tuple(
                 [](auto&& x) {
                     using x_type = std::decay_t<decltype(x.get())>;
-                    // SA_DECAY_TYPE_IS(x, fwd_capture_wrapper<x_type>);
+                    SA_DECAY_TYPE_IS(x, fwd_capture_wrapper<x_type>);
                 },
                 fwdx);
         };
