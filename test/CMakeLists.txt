@@ -34,7 +34,7 @@ macro(augment_test x xname flags)
     get_target_property(xsrcs ${x} SOURCES)
 
     add_executable("${AUGMENTED_TEST_NAME}" EXCLUDE_FROM_ALL ${xsrcs})
-    vrm_cmake_add_unit_test("${AUGMENTED_TEST_NAME}" ${CMAKE_CURRENT_BINARY_DIR}/${_x})
+    vrm_cmake_add_unit_test("${AUGMENTED_TEST_NAME}" ${CMAKE_CURRENT_BINARY_DIR}/${AUGMENTED_TEST_NAME})
     target_compile_options("${AUGMENTED_TEST_NAME}" PUBLIC ${ARGN})
 #}
 endmacro()
@@ -49,25 +49,14 @@ foreach(_x IN LISTS vrm_cmake_out)
     # TODO: improve/remove MinGW devel environment setup
     if(NOT DEFINED WIN_MINGW_DEVEL)
     #{
-        get_target_property(xsrcs ${_x} SOURCES)
+        vrm_cmake_augment_test_asan(${_x})
+        vrm_cmake_augment_test_ofast(${vrm_cmake_out})
 
-        augment_test(${_x} asan "-fdiagnostics-color=always" "-fsanitize=address")
-        target_link_libraries("${AUGMENTED_TEST_NAME}" "-lasan")
+        vrm_cmake_augment_test_tsan(${_x})
+        vrm_cmake_augment_test_ofast(${vrm_cmake_out})
 
-        augment_test(${_x} tsan "-fdiagnostics-color=always" "-fsanitize=thread")
-        target_link_libraries("${AUGMENTED_TEST_NAME}" "-ltsan")
-
-        augment_test(${_x} ubsan "-fdiagnostics-color=always" "-fsanitize=undefined")
-        target_link_libraries("${AUGMENTED_TEST_NAME}" "-lubsan")
-
-        augment_test(${_x} asan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=address")
-        target_link_libraries("${AUGMENTED_TEST_NAME}" "-lasan")
-
-        augment_test(${_x} tsan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=thread")
-        target_link_libraries("${AUGMENTED_TEST_NAME}" "-ltsan")
-
-        augment_test(${_x} ubsan_ofast "-Ofast" "-fdiagnostics-color=always" "-fsanitize=undefined")
-        target_link_libraries("${AUGMENTED_TEST_NAME}" "-lubsan")
+        vrm_cmake_augment_test_ubsan(${_x})
+        vrm_cmake_augment_test_ofast(${vrm_cmake_out})
     #}
     endif()
 
