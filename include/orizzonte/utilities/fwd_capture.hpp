@@ -1,16 +1,13 @@
 #pragma once
 
+// TODO: to vrm_core?
+
 #include <type_traits>
 #include <functional>
-#include <vrm/core/utility_macros.hpp>
-#include <vrm/core/type_traits.hpp>
 #include "tuple.hpp"
 
 namespace orizzonte::impl
 {
-    using vrm::core::forward_like;
-    using vrm::core::copy_if_rvalue;
-
     namespace detail
     {
         template <typename T>
@@ -88,14 +85,14 @@ namespace orizzonte::impl
     };
 
     template <typename T>
-    auto fwd_capture(T&& x)
+    constexpr auto fwd_capture(T&& x)
         noexcept(noexcept(fwd_capture_wrapper<T>(FWD(x))))
     {
         return fwd_capture_wrapper<T>(FWD(x));
     }
 
     template <typename T>
-    auto fwd_copy_capture(T&& x)
+    constexpr auto fwd_copy_capture(T&& x)
         noexcept(noexcept(fwd_copy_capture_wrapper<T>(FWD(x))))
     {
         return fwd_copy_capture_wrapper<T>(FWD(x));
@@ -110,19 +107,22 @@ namespace orizzonte::impl
 namespace orizzonte::impl
 {
     template <typename... Ts>
-    auto fwd_capture_as_tuple(Ts&&... xs)
+    constexpr auto fwd_capture_as_tuple(Ts&&... xs)
+        noexcept(noexcept(std::make_tuple(FWD_CAPTURE(xs)...)))
     {
         return std::make_tuple(FWD_CAPTURE(xs)...);
     }
 
     template <typename... Ts>
-    auto fwd_copy_capture_as_tuple(Ts&&... xs)
+    constexpr auto fwd_copy_capture_as_tuple(Ts&&... xs)
+        noexcept(noexcept(std::make_tuple(FWD_COPY_CAPTURE(xs)...)))
     {
         return std::make_tuple(FWD_COPY_CAPTURE(xs)...);
     }
 
     template <typename TF, typename TFwdCapture>
-    decltype(auto) apply_fwd_capture(TF&& f, TFwdCapture&& fc)
+    constexpr decltype(auto) apply_fwd_capture(TF&& f, TFwdCapture&& fc)
+        // TODO: noexcept
     {
         return orizzonte::impl::apply([&f](auto&&... xs) mutable -> decltype(
                                           auto) { return f(FWD(xs).get()...); },
