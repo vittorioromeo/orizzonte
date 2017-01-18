@@ -29,8 +29,8 @@ namespace orizzonte::impl
             }
 
             template <typename TFwd>
-            constexpr fwd_capture_tuple(TFwd&& x)
-                noexcept(std::is_nothrow_constructible<base_type, decltype(x)>{})
+            constexpr fwd_capture_tuple(TFwd&& x) noexcept(
+                std::is_nothrow_constructible<base_type, decltype(x)>{})
                 : base_type(FWD(x))
             {
             }
@@ -46,7 +46,8 @@ namespace orizzonte::impl
                 return std::get<0>(as_tuple());
             }
 
-            constexpr auto get() && noexcept(std::is_move_constructible<decay_element_type>{})
+            constexpr auto get() &&
+                noexcept(std::is_move_constructible<decay_element_type>{})
             {
                 return std::move(std::get<0>(as_tuple()));
             }
@@ -61,8 +62,8 @@ namespace orizzonte::impl
 
     public:
         template <typename TFwd>
-        constexpr fwd_capture_wrapper(TFwd&& x)
-            noexcept(std::is_nothrow_constructible<base_type, decltype(x)>{})
+        constexpr fwd_capture_wrapper(TFwd&& x) noexcept(
+            std::is_nothrow_constructible<base_type, decltype(x)>{})
             : base_type(FWD(x))
         {
         }
@@ -75,25 +76,26 @@ namespace orizzonte::impl
         using base_type = detail::fwd_capture_tuple<T>;
 
     public:
-        // No `FWD` is intentional, to force a copy if `T` is not an lvalue reference.
+        // No `FWD` is intentional, to force a copy if `T` is not an lvalue
+        // reference.
         template <typename TFwd>
-        constexpr fwd_copy_capture_wrapper(TFwd&& x)
-            noexcept(std::is_nothrow_constructible<base_type, decltype(x)>{})
+        constexpr fwd_copy_capture_wrapper(TFwd&& x) noexcept(
+            std::is_nothrow_constructible<base_type, decltype(x)>{})
             : base_type(x)
         {
         }
     };
 
     template <typename T>
-    constexpr auto fwd_capture(T&& x)
-        noexcept(noexcept(fwd_capture_wrapper<T>(FWD(x))))
+    constexpr auto fwd_capture(T&& x) noexcept(
+        noexcept(fwd_capture_wrapper<T>(FWD(x))))
     {
         return fwd_capture_wrapper<T>(FWD(x));
     }
 
     template <typename T>
-    constexpr auto fwd_copy_capture(T&& x)
-        noexcept(noexcept(fwd_copy_capture_wrapper<T>(FWD(x))))
+    constexpr auto fwd_copy_capture(T&& x) noexcept(
+        noexcept(fwd_copy_capture_wrapper<T>(FWD(x))))
     {
         return fwd_copy_capture_wrapper<T>(FWD(x));
     }
@@ -107,26 +109,26 @@ namespace orizzonte::impl
 namespace orizzonte::impl
 {
     template <typename... Ts>
-    constexpr auto fwd_capture_as_tuple(Ts&&... xs)
-        noexcept(noexcept(std::make_tuple(FWD_CAPTURE(xs)...)))
+    constexpr auto fwd_capture_as_tuple(Ts&&... xs) noexcept(
+        noexcept(std::make_tuple(FWD_CAPTURE(xs)...)))
     {
         return std::make_tuple(FWD_CAPTURE(xs)...);
     }
 
     template <typename... Ts>
-    constexpr auto fwd_copy_capture_as_tuple(Ts&&... xs)
-        noexcept(noexcept(std::make_tuple(FWD_COPY_CAPTURE(xs)...)))
+    constexpr auto fwd_copy_capture_as_tuple(Ts&&... xs) noexcept(
+        noexcept(std::make_tuple(FWD_COPY_CAPTURE(xs)...)))
     {
         return std::make_tuple(FWD_COPY_CAPTURE(xs)...);
     }
 
-    template <typename TF, typename TFwdCapture>
-    constexpr decltype(auto) apply_fwd_capture(TF&& f, TFwdCapture&& fc)
-        // TODO: noexcept
+    template <typename TF, typename... TFwdCaptures>
+    constexpr decltype(auto) apply_fwd_capture(TF&& f, TFwdCaptures&&... fcs)
+    // TODO: noexcept
     {
         return orizzonte::impl::apply([&f](auto&&... xs) mutable -> decltype(
                                           auto) { return f(FWD(xs).get()...); },
-            FWD(fc));
+            std::tuple_cat(FWD(fcs)...));
     }
 }
 
