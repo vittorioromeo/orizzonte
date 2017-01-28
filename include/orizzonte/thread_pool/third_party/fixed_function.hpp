@@ -112,10 +112,10 @@ namespace orizzonte::thread_pool::third_party
         {
             using unref_type = std::remove_reference_t<TFFwd>;
 
-            ORIZZONTE_S_ASSERT_M(sizeof(unref_type) < storage_size,
+            ORIZZONTE_S_ASSERT(sizeof(unref_type) < storage_size,
                 "functional object doesn't fit into internal storage");
 
-            ORIZZONTE_S_ASSERT_M(std::is_move_constructible<unref_type>{},
+            ORIZZONTE_S_ASSERT(std::is_move_constructible<unref_type>{},
                 "Should be of movable type");
 
             new(&_storage) unref_type(std::move(*static_cast<unref_type*>(&f)));

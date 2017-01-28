@@ -16,11 +16,8 @@
 /// @macro Runtime assertion of a binary operation.
 #define ORIZZONTE_ASSERT_OP(...) VRM_CORE_ASSERT_OP(__VA_ARGS__)
 
-/// @macro Static assertion. Does not require a message.
-#define ORIZZONTE_S_ASSERT(...) VRM_CORE_STATIC_ASSERT_NM(__VA_ARGS__)
-
-/// @macro Static assertion with message.
-#define ORIZZONTE_S_ASSERT_M(...) VRM_CORE_STATIC_ASSERT(__VA_ARGS__)
+/// @macro Static assertion.
+#define ORIZZONTE_S_ASSERT(...) static_assert(__VA_ARGS__)
 
 /// @macro Statically asserts the passed variadic arguments, after wrapping them
 /// in `decltype(...){}`.
