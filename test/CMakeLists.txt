@@ -47,7 +47,7 @@ foreach(_x IN LISTS vrm_cmake_out)
     # TODO: to utility functions in vrm_cmake? to option?
 
     # TODO: improve/remove MinGW devel environment setup
-    if(NOT DEFINED WIN_MINGW_DEVEL)
+    if(${AUGMENT_TESTS} AND NOT DEFINED WIN_MINGW_DEVEL)
     #{
         vrm_cmake_augment_test_asan(${_x})
         vrm_cmake_augment_test_ofast(${vrm_cmake_out})

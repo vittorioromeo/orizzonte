@@ -2,9 +2,9 @@
 
 // TODO: to vrm_core?
 
-#include <type_traits>
-#include <functional>
 #include "tuple.hpp"
+#include <functional>
+#include <type_traits>
 
 namespace orizzonte::impl
 {
@@ -126,9 +126,10 @@ namespace orizzonte::impl
     constexpr decltype(auto) apply_fwd_capture(TF&& f, TFwdCaptures&&... fcs)
     // TODO: noexcept
     {
-        return orizzonte::impl::apply([&f](auto&&... xs) mutable -> decltype(
-                                          auto) { return f(FWD(xs).get()...); },
-            std::tuple_cat(FWD(fcs)...));
+        return orizzonte::impl::multi_apply(
+            [&f](auto&&... xs) mutable -> decltype(
+                auto) { return f(FWD(xs).get()...); },
+            FWD(fcs)...);
     }
 }
 
