@@ -46,3 +46,4 @@ project/extlibs/*
 
 **callgrind.*db
 db-wal
+db
