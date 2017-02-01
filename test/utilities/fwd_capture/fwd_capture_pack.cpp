@@ -7,18 +7,18 @@ TEST_MAIN()
     using namespace orizzonte::impl;
 
     auto fwd_expect_val = [](auto&& x) {
-        return [fwdx = FWD_COPY_CAPTURE(x)]
+        return [fwdx = fwd_capture_pack(FWD(x))]
         {
             using x_type = std::decay_t<decltype(x)>;
-            SA_DECAY_TYPE_IS(fwdx, fwd_capture_wrapper<x_type>);
+            SA_DECAY_TYPE_IS(std::get<0>(fwdx), fwd_capture_wrapper<x_type>);
         };
     };
 
     auto fwd_expect_ref = [](auto&& x) {
-        return [fwdx = FWD_COPY_CAPTURE(x)]
+        return [fwdx = fwd_capture_pack(FWD(x))]
         {
             using x_type = std::decay_t<decltype(x)>;
-            SA_DECAY_TYPE_IS(fwdx, fwd_capture_wrapper<x_type&>);
+            SA_DECAY_TYPE_IS(std::get<0>(fwdx), fwd_capture_wrapper<x_type&>);
         };
     };
 
@@ -26,7 +26,7 @@ TEST_MAIN()
         // literal
         fwd_expect_val(0);
 
-        // explicit move (will copy)
+        // explicit move
         int a = 0;
         fwd_expect_val(std::move(a));
 
@@ -35,22 +35,19 @@ TEST_MAIN()
         fwd_expect_ref(b);
     }
 
-    // won't compile as intended
-    /*
     expect_ops([&] {
+        // should be moved
         fwd_expect_val(nocopy{});
     })
         .copies(0)
-        .moves(1);
-    */
+        .moves(2); // TODO: can the second move be avoided?
 
     expect_ops([&] {
-        // should be copied
+        // should be moved
         fwd_expect_val(anything{});
     })
-        .copies(1)
-        .moves(0);
-
+        .copies(0)
+        .moves(2); // TODO: can the second move be avoided?
 
     expect_ops([&] {
         nocopy x;

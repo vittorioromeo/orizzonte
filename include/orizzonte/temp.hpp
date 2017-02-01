@@ -483,7 +483,7 @@ void wait_until_complete(TContext& ctx, TChains&&... chains)
         chains).then([&l] { l.decrement_and_notify_all(); });
 
     l.execute_and_wait_until_zero(
-        [&ctx, &c, &l, chains = FWD_CAPTURE_AS_TUPLE(chains) ]() mutable {
+        [&ctx, &c, &l, chains = FWD_CAPTURE_PACK(chains) ]() mutable {
 
             c.start();
         });
