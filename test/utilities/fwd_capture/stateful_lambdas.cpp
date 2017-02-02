@@ -85,7 +85,7 @@ TEST_MAIN()
         auto test = [](auto&& x) {
             return [x = FWD_CAPTURE(x)]() mutable
             {
-                return x.get()();
+                return x.get()(); // TODO: semantics??
             };
         };
 

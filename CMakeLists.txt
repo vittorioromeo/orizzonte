@@ -50,7 +50,7 @@ if(NOT DEFINED WIN_MINGW_DEVEL)
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z")
-# vrm_cmake_add_common_compiler_flags_suggest_attribute()
+vrm_cmake_add_common_compiler_flags_suggest_attribute()
 
 # The `check` target runs all tests.
 vrm_check_target()
