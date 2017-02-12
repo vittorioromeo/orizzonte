@@ -10,41 +10,116 @@
 namespace orizzonte::impl
 {
     template <typename T>
-    class fwd_capture_wrapper
+    class value_wrapper
     {
+        static_assert(!std::is_reference<T>{});
+
     private:
-        using decay_element_type = std::decay_t<T>;
-        using tuple_type = std::tuple<T>;
-        tuple_type _t;
+        T _value;
 
     public:
+        using type = T;
+
         template <typename TFwd>
-        constexpr fwd_capture_wrapper(TFwd&& x) noexcept(
-            std::is_nothrow_constructible<tuple_type, TFwd&&>{})
-            : _t(FWD(x))
+        constexpr value_wrapper(TFwd&& x) noexcept(
+            std::is_nothrow_constructible<T, TFwd&&>{})
+            : _value(FWD(x))
         {
+        }
+
+        template <typename... TArgs,
+            typename = std::enable_if_t<std::is_callable<T&(TArgs&&...)>{}>>
+        constexpr decltype(auto) operator()(TArgs&&... args) noexcept(
+            noexcept(_value(FWD(args)...)))
+        {
+            return _value(FWD(args)...);
+        }
+
+        template <typename... TArgs,
+            typename =
+                std::enable_if_t<std::is_callable<const T&(TArgs&&...)>{}>>
+        constexpr decltype(auto) operator()(TArgs&&... args) const
+            noexcept(noexcept(_value(FWD(args)...)))
+        {
+            return _value(FWD(args)...);
         }
 
         constexpr auto& get() & noexcept
         {
-            return std::get<0>(_t);
+            return _value;
         }
 
         constexpr const auto& get() const & noexcept
         {
-            return std::get<0>(_t);
+            return _value;
         }
 
-        constexpr auto get() &&
-            noexcept(std::is_nothrow_move_constructible<decay_element_type>{})
+        constexpr auto get() && noexcept
         {
-            return std::move(std::get<0>(_t));
+            return std::move(_value);
         }
 
-        constexpr T forward_get()
+        constexpr operator T&() & noexcept
         {
-            return std::forward<T>(std::get<0>(_t));
+            return _value;
         }
+
+        constexpr operator const T&() const noexcept
+        {
+            return _value;
+        }
+
+        constexpr operator T &&() && noexcept
+        {
+            return std::move(_value);
+        }
+    };
+
+    template <typename T>
+    using perfect_wrapper = std::conditional_t<             // .
+        std::is_lvalue_reference<T>{},                      // .
+        std::reference_wrapper<std::remove_reference_t<T>>, // .
+        value_wrapper<T>                                    // .
+        >;
+
+    template <typename T>
+    class fwd_capture_wrapper : public perfect_wrapper<T>
+    {
+    private:
+        using base_type = perfect_wrapper<T>;
+        using decay_element_type = std::decay_t<T>;
+
+        auto& as_perfect_wrapper() noexcept
+        {
+            return static_cast<base_type&>(*this);
+        }
+
+        const auto& as_perfect_wrapper() const noexcept
+        {
+            return static_cast<const base_type&>(*this);
+        }
+
+    public:
+        template <typename TFwd>
+        constexpr fwd_capture_wrapper(TFwd&& x) noexcept(
+            std::is_nothrow_constructible<base_type, TFwd&&>{})
+            : base_type(FWD(x))
+        {
+        }
+
+        /// @brief Gets the wrapped perfectly-captured object by forwarding it
+        /// into the return value.
+        /// @details Returns `FWD(this->get())`. In practice:
+        /// * If the wrapped object is a value, it gets moved out (instead of
+        /// returning a reference to it like `get()` would).
+        /// * If the wrapped object is a reference, a reference gets returned.
+        /// This happens because `T` is a reference type.
+        constexpr T fwd_get() noexcept(std::is_nothrow_constructible<T, T&&>{})
+        {
+            return FWD(this->get());
+        }
+
+        constexpr T fwd_get() const = delete;
     };
 
     template <typename T>
@@ -98,7 +173,7 @@ namespace orizzonte
     {
         return orizzonte::impl::multi_apply(
             [&f](auto&&... xs) -> decltype(auto) {
-                return vrm::core::forward_like<TF>(f)(FWD(xs).forward_get()...);
+                return vrm::core::forward_like<TF>(f)(FWD(xs).fwd_get()...);
             },
             FWD(fcs)...);
     }
