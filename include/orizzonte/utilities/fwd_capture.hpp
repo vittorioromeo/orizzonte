@@ -54,7 +54,7 @@ namespace orizzonte::impl
             return _value;
         }
 
-        constexpr auto get() && noexcept
+        constexpr T get() && noexcept
         {
             return std::move(_value);
         }
@@ -69,7 +69,7 @@ namespace orizzonte::impl
             return _value;
         }
 
-        constexpr operator T &&() && noexcept
+        constexpr operator T() && noexcept
         {
             return std::move(_value);
         }
@@ -109,14 +109,15 @@ namespace orizzonte::impl
 
         /// @brief Gets the wrapped perfectly-captured object by forwarding it
         /// into the return value.
-        /// @details Returns `FWD(this->get())`. In practice:
+        /// @details Returns `std::forward<T>(this->get())`. In practice:
         /// * If the wrapped object is a value, it gets moved out (instead of
         /// returning a reference to it like `get()` would).
         /// * If the wrapped object is a reference, a reference gets returned.
         /// This happens because `T` is a reference type.
         constexpr T fwd_get() noexcept(std::is_nothrow_constructible<T, T&&>{})
         {
-            return FWD(this->get());
+            // Note: `FWD` is not applicable here.
+            return std::forward<T>(this->get());
         }
 
         constexpr T fwd_get() const = delete;
