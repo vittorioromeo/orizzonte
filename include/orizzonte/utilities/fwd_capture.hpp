@@ -87,17 +87,6 @@ namespace orizzonte::impl
     {
     private:
         using base_type = perfect_wrapper<T>;
-        using decay_element_type = std::decay_t<T>;
-
-        auto& as_perfect_wrapper() noexcept
-        {
-            return static_cast<base_type&>(*this);
-        }
-
-        const auto& as_perfect_wrapper() const noexcept
-        {
-            return static_cast<const base_type&>(*this);
-        }
 
     public:
         template <typename TFwd>
@@ -174,7 +163,7 @@ namespace orizzonte
     {
         return orizzonte::impl::multi_apply(
             [&f](auto&&... xs) -> decltype(auto) {
-                return vrm::core::forward_like<TF>(f)(FWD(xs).fwd_get()...);
+                return static_cast<TF&&>(f)(xs.fwd_get()...);
             },
             FWD(fcs)...);
     }
