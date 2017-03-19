@@ -155,7 +155,7 @@ namespace test_impl
     do                                                     \
     {                                                      \
         auto _t_x(expr);                                   \
-                                                           \
+                                                          \
         test_impl::test_expr(__LINE__, _t_x, expr, #expr); \
     } while(false)
 

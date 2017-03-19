@@ -1,12 +1,11 @@
 #pragma once
 
-#include <experimental/tuple>
-#include <tuple>
+#include <vrm/core/tuple_utils.hpp>
 #include <vrm/core/utility_macros.hpp>
 
 namespace orizzonte::impl
 {
-    using std::experimental::apply;
+    using vrm::core::apply;
 
     template <typename TF, typename TTuple>
     decltype(auto) for_tuple(TF&& f, TTuple&& t)
