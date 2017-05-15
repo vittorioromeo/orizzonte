@@ -1,10 +1,7 @@
 #pragma once
 
-// TODO: to vrm_core?
-
 #include "./tuple.hpp"
 #include <vrm/core/fwd_capture.hpp>
-
 
 namespace orizzonte::impl
 {

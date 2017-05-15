@@ -1,10 +1,10 @@
 #pragma once
 
+#include "fwd_capture.hpp"
+#include "tuple.hpp"
 #include <type_traits>
 #include <utility>
 #include <vrm/core/type_traits/forward_like.hpp>
-#include "tuple.hpp"
-#include "fwd_capture.hpp"
 
 namespace orizzonte::impl
 {
@@ -22,23 +22,9 @@ namespace orizzonte::impl
         return std::is_same<std::decay_t<T>, nothing_t>{};
     }
 
-    namespace detail
-    {
-        template <typename T>
-        struct void_to_nothing
-        {
-            using type = T;
-        };
-
-        template <>
-        struct void_to_nothing<void>
-        {
-            using type = nothing_t;
-        };
-    }
-
     template <typename T>
-    using void_to_nothing_t = typename detail::void_to_nothing<T>::type;
+    using void_to_nothing_t =
+        std::conditional_t<std::is_same_v<T, void>, nothing_t, T>;
 
     template <typename TF>
     decltype(auto) call_ignoring_nothing(TF&& f);

@@ -34,6 +34,7 @@ endif()
 
 # TODO:
 # include_directories("/home/vittorioromeo/temp/mettle/include/")
+include_directories("/home/vittorioromeo/OHWorkspace/ecst/include/")
 
 # Alias the include directory.
 set(ORIZZONTE_INC_DIR "${ORIZZONTE_SOURCE_DIR}/include/")
