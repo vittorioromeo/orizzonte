@@ -1,19 +1,32 @@
+#include "./aliases.hpp"
 #include "./dependencies.hpp"
 #include "./utilities.hpp"
+#include <ecst/utils.hpp>
+
+#define IF_CONSTEXPR \
+    if               \
+    constexpr
 
 namespace orizzonte
 {
+    void sleep_ms(int ms)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    }
+
+
     namespace result
     {
         template <typename... Ts>
-        using t = std::tuple<void_to_nothing_t<Ts>...>;
+        using t = std::tuple<impl::void_to_nothing_t<Ts>...>;
 
         using none_t = t<>;
 
         constexpr none_t none{};
 
         template <typename... Ts>
-        using of_apply = decltype(apply_ignore_nothing(std::declval<Ts>()...));
+        using of_apply =
+            decltype(impl::apply_ignore_nothing(std::declval<Ts>()...));
     }
 
     template <typename, typename>
@@ -214,7 +227,8 @@ namespace orizzonte
             // `fwd_capture` is used to preserve "lvalue references".
             // TODO: is this post required/beneficial?
             this->post([ this, x = FWD_CAPTURE(x) ]() mutable {
-                apply_ignore_nothing(as_f(), forward_like<T>(x.get()));
+                impl::apply_ignore_nothing(
+                    as_f(), impl::forward_like<T>(x.get()));
             });
         }
 
@@ -224,8 +238,8 @@ namespace orizzonte
             // `fwd_capture` is used to preserve "lvalue references".
             this->post([ this, x = FWD_CAPTURE(x), &n, &ns... ]() mutable {
                 // Take the result value of this function...
-                decltype(auto) res_value =
-                    apply_ignore_nothing(as_f(), forward_like<T>(x.get()));
+                decltype(auto) res_value = impl::apply_ignore_nothing(
+                    as_f(), impl::forward_like<T>(x.get()));
 
                 // ...and wrap it into a tuple. Preserve "lvalue references".
                 result::t<decltype(res_value)> res(FWD(res_value));
@@ -290,7 +304,6 @@ namespace orizzonte
         friend context_type;
         friend continuable_type;
 
-
     protected:
         using input_type = typename child_of<TParent>::input_type;
         using return_type = result::t<result::of_apply<TFs, input_type>...>;
@@ -317,12 +330,14 @@ namespace orizzonte
                     // Should either propagate an "lvalue reference" to the
                     // original `x` or move the copy of `x` that was made in
                     // `exec`.
-                    apply_ignore_nothing(f, forward_like<T>(x.get()));
+                    impl::apply_ignore_nothing(
+                        f, impl::forward_like<T>(x.get()));
                 });
             };
 
-            for_args_data([&exec](auto _,
-                              auto& f) { exec(int_v<decltype(_)::index>, f); },
+            vrm::core::for_args_data(
+                [&exec](
+                    auto _, auto& f) { exec(int_v<decltype(_)::index>, f); },
                 static_cast<TFs&>(*this)...);
         }
 
@@ -339,13 +354,14 @@ namespace orizzonte
                     // Should either propagate an "lvalue reference" to the
                     // original `x` or move the copy of `x` that was made in
                     // `exec`.
-                    decltype(auto) res =
-                        apply_ignore_nothing(f, forward_like<T>(x.get()));
+                    decltype(auto) res = impl::apply_ignore_nothing(
+                        f, impl::forward_like<T>(x.get()));
 
                     using decay_res_type = std::decay_t<decltype(res)>;
 
                     // Don't set results for `void`-returning functions.
-                    IF_CONSTEXPR(!std::is_same<decay_res_type, nothing_t>{})
+                    IF_CONSTEXPR(
+                        !std::is_same_v<decay_res_type, impl::nothing_t>)
                     {
                         // Should either propagate an "lvalue reference" to
                         // the original `x` or move the copy of `x` that was
@@ -353,7 +369,7 @@ namespace orizzonte
 
                         // TODO: race cond?
                         std::get<decltype(idx){}>(_results) =
-                            forward_like<T>(res);
+                            impl::forward_like<T>(res);
                     }
 
                     // If this is the last `TFs...` function to end, trigger the
@@ -365,8 +381,9 @@ namespace orizzonte
                 });
             };
 
-            for_args_data([&exec](auto _,
-                              auto& f) { exec(int_v<decltype(_)::index>, f); },
+            vrm::core::for_args_data(
+                [&exec](
+                    auto _, auto& f) { exec(int_v<decltype(_)::index>, f); },
                 static_cast<TFs&>(*this)...);
         }
 
@@ -460,7 +477,7 @@ namespace orizzonte
         template <typename... TConts>
         auto build(TConts&&... conts)
         {
-            return ll::build_root(static_cast<TContext&>(*this), FWD(conts)...);
+            return build_root(static_cast<TContext&>(*this), FWD(conts)...);
         }
     };
 }
@@ -469,7 +486,7 @@ template <typename T>
 void execute_after_move(T x)
 {
     x.start();
-    ll::sleep_ms(200);
+    orizzonte::sleep_ms(200);
 }
 
 /*
@@ -483,7 +500,7 @@ void wait_until_complete(TContext& ctx, TChains&&... chains)
         chains).then([&l] { l.decrement_and_notify_all(); });
 
     l.execute_and_wait_until_zero(
-        [&ctx, &c, &l, chains = FWD_CAPTURE_AS_TUPLE(chains) ]() mutable {
+        [&ctx, &c, &l, chains = FWD_CAPTURE_PACK(chains) ]() mutable {
 
             c.start();
         });
@@ -549,7 +566,7 @@ struct pool
 };
 #endif
 
-class my_context : public ll::context_facade<my_context>
+class my_context : public orizzonte::context_facade<my_context>
 {
 private:
     pool& _p;
@@ -583,7 +600,7 @@ int main()
     auto c2 = ctx.build([] { return nocopy{}; }).then([](nocopy) {});
     c2.start();
 
-    sleep_ms(200);
+    orizzonte::sleep_ms(200);
 }
 #endif
 
@@ -607,12 +624,12 @@ int main()
 
             while(!k)
             {
-                sleep_ms(5);
+                orizzonte::sleep_ms(5);
             }
         });
     }
 
-    sleep_ms(300);
+    orizzonte::sleep_ms(300);
 }
 #endif
 
@@ -644,7 +661,7 @@ int main()
             // auto c2 = ctx.build([] { return nocopy{}; }).then([](nocopy) {});
             // c2.start();
 
-            // ll::wait_until_complete(ctx, c);
+            // wait_until_complete(ctx, c);
             // sleep_ms(100);
         });
     }
@@ -687,7 +704,7 @@ int main()
                      .then([](auto& y) { y += 5; }, [](auto& y) { y += 5; })
                      .then([&aint] {
                          std::printf("AINT: %d\n", aint.load());
-                         assert(aint == 10);
+                         assert(aint.load() == 10);
                      });
         c.start();
     }
@@ -711,9 +728,8 @@ int main()
         int lv0 = 0;
         int lv1 = 0;
         auto c =
-            ctx.build([&lv0, &lv1]() -> std::tuple<int&, int&> {
-                   return {lv0, lv1};
-               })
+            ctx.build(
+                   [&lv0, &lv1]() { return std::forward_as_tuple(lv0, lv1); })
                 .then(
                     [](auto y) -> int { // TODO: can't return reference, fix
                         std::get<0>(y) += 1;
@@ -735,6 +751,6 @@ int main()
     // execute_after_move(std::move(computation));
     // wait_until_complete(ctx, std::move(computation));
     // computation.start();
-    ll::sleep_ms(400);
+    orizzonte::sleep_ms(400);
 }
 #endif

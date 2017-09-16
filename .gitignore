@@ -44,4 +44,6 @@ project/extlibs/*
 /**/*.callgrind.out.*
 ./**/*.callgrind.out.*
 
-**callgrind.*
+**callgrind.*db
+db-wal
+db

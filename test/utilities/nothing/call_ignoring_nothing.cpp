@@ -164,7 +164,7 @@ TEST_MAIN()
         auto l = [](auto&& x) {
             return [y = FWD_CAPTURE(x)]() mutable
             {
-                ++(y.get());
+                ++(y.get()); // TODO: semantics??
             };
         };
 

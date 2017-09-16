@@ -8,6 +8,7 @@
 #include <string>
 #include <type_traits>
 
+#define TEST_PURE __attribute__((pure))
 #define TEST_CONST __attribute__((const))
 #define TEST_MAIN(...) int TEST_CONST main(__VA_ARGS__)
 #define TEST_LIKELY(...) __builtin_expect(!!(__VA_ARGS__), 1)
@@ -154,7 +155,7 @@ namespace test_impl
     do                                                     \
     {                                                      \
         auto _t_x(expr);                                   \
-                                                           \
+                                                          \
         test_impl::test_expr(__LINE__, _t_x, expr, #expr); \
     } while(false)
 
@@ -191,25 +192,25 @@ namespace test
 {
     namespace impl
     {
-        auto& ctors() noexcept
+        auto& TEST_CONST ctors() noexcept
         {
             static int res{0};
             return res;
         }
 
-        auto& dtors() noexcept
+        auto& TEST_CONST dtors() noexcept
         {
             static int res{0};
             return res;
         }
 
-        auto& copies() noexcept
+        auto& TEST_CONST copies() noexcept
         {
             static int res{0};
             return res;
         }
 
-        auto& moves() noexcept
+        auto& TEST_CONST moves() noexcept
         {
             static int res{0};
             return res;
@@ -357,32 +358,38 @@ namespace test
     {
         anything()
         {
+            std::cout << "anything()\n";
             ++(impl::ctors());
         }
 
         ~anything()
         {
+            std::cout << "~anything()\n";
             ++(impl::dtors());
         }
 
         anything(const anything&)
         {
+            std::cout << "anything(const anything&)\n";
             ++(impl::copies());
         }
 
         anything& operator=(const anything&)
         {
+            std::cout << "anything& operator=(const anything&)\n";
             ++(impl::copies());
             return *this;
         }
 
         anything(anything&&)
         {
+            std::cout << "anything(anything&&)\n";
             ++(impl::moves());
         }
 
         anything& operator=(anything&&)
         {
+            std::cout << "anything& operator=(anything&&)\n";
             ++(impl::moves());
             return *this;
         }

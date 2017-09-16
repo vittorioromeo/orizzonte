@@ -36,4 +36,40 @@ TEST_MAIN()
         auto res = f1();
         EXPECT_EQ(res, 1);
     }
+
+    {
+        // from empty, capture lvalue, no move
+        int a = 0;
+        fixed_function<void()> f0;
+        f0 = [&a] { a = 1; };
+        f0();
+        EXPECT_EQ(a, 1);
+    }
+
+    {
+        // from empty, capture lvalue, move
+        int a = 0;
+        fixed_function<void()> f0;
+        f0 = [&a] { a = 1; };
+        auto f1 = std::move(f0);
+        f1();
+        EXPECT_EQ(a, 1);
+    }
+
+    {
+        // from empty, mutable, no move
+        fixed_function<int()> f0;
+        f0 = [a = 0]() mutable { a = 1; return a; };
+        auto res = f0();
+        EXPECT_EQ(res, 1);
+    }
+
+    {
+        // from empty, mutable, move
+        fixed_function<int()> f0;
+        f0 = [a = 0]() mutable { a = 1; return a; };
+        auto f1 = std::move(f0);
+        auto res = f1();
+        EXPECT_EQ(res, 1);
+    }
 }
