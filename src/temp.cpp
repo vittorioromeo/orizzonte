@@ -10,67 +10,9 @@
 #include <random>
 #include <chrono>
 
-#define FWD(...) ::std::forward<decltype(__VA_ARGS__)>(__VA_ARGS__)
+#include "../include/orizzonte.hpp"
 
-struct nothing { };
-
-template <typename T>
-using void_to_nothing_t = std::conditional_t<std::is_void_v<T>, nothing, T>;
-
-template <typename T>
-using is_nothing_t = std::is_same<std::decay_t<T>, nothing>;
-
-template <typename T>
-constexpr auto is_nothing_v = is_nothing_t<T>::value;
-
-template <typename F, typename... Ts>
-decltype(auto) returning_nothing_instead_of_void(F&& f, Ts&&... xs)
-{
-    if constexpr(std::is_void_v<decltype(FWD(f)(FWD(xs)...))>)
-    {
-        FWD(f)(FWD(xs)...);
-        return nothing{};
-    }
-    else
-    {
-        return FWD(f)(FWD(xs)...);
-    }
-}
-
-template <typename F>
-decltype(auto) call_ignoring_nothing(F&& f)
-{
-    return returning_nothing_instead_of_void(FWD(f));
-}
-
-template <typename F, typename T, typename... Ts>
-decltype(auto) call_ignoring_nothing(F&& f, T&& x, Ts&&... xs)
-{
-    return call_ignoring_nothing([&](auto&&... ys) -> decltype(auto)
-    {
-        if constexpr(is_nothing_v<T>)
-        {
-            return FWD(f)(FWD(ys)...);
-        }
-        else
-        {
-            return FWD(f)(FWD(x), FWD(ys)...);
-        }
-    }, FWD(xs)...);
-}
-
-template <typename F, typename T>
-decltype(auto) apply_ignoring_nothing(F&& f, T&& t)
-{
-    return std::apply([&](auto&&... xs) -> decltype(auto)
-    {
-        return call_ignoring_nothing(FWD(f), FWD(xs)...);
-    }, FWD(t));
-}
-
-template <typename F, typename... Ts>
-using result_of_ignoring_nothing_t =
-    decltype(call_ignoring_nothing(std::declval<F>(), std::declval<Ts>()...));
+using namespace orizzonte::utility;
 
 template <typename F, typename... Ts, std::size_t... Is>
 void enumerate_args_impl(std::index_sequence<Is...>, F&& f, Ts&&... xs)
