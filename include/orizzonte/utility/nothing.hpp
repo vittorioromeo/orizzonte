@@ -115,7 +115,7 @@ namespace orizzonte::utility
         {
         }
 
-        // clang-format off
+// clang-format off
         #define CALL_OPERATOR(ref_qual)                                                       \
         template <typename... Ts>                                                             \
         constexpr auto operator()(Ts&&... xs) ref_qual                                        \

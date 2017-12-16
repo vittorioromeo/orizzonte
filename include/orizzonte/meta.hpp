@@ -4,5 +4,7 @@
 
 #pragma once
 
-#include "./orizzonte/meta.hpp"
-#include "./orizzonte/utility.hpp"
+#include "./meta/constant.hpp"
+#include "./meta/enumerate_args.hpp"
+#include "./meta/sequence.hpp"
+#include "./meta/type_wrapper.hpp"

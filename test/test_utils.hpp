@@ -182,7 +182,14 @@ namespace test_impl
 
 #define SA_SAME_TYPE(T0, T1) static_assert(std::is_same<T0, T1>{})
 #define SA_TYPE_IS(a, T) SA_SAME_TYPE(decltype(a), T)
+
+#define SA_TYPE_IS_DP(a, T) SA_SAME_TYPE(decltype a, TEST_IMPL_DEPARENS T)
+
 #define SA_DECAY_TYPE_IS(a, T) SA_SAME_TYPE(std::decay_t<decltype(a)>, T)
+#define SA_SAME_TYPE_DP(T0, T1) \
+    static_assert(std::is_same<TEST_IMPL_DEPARENS T0, TEST_IMPL_DEPARENS T1>{})
+
+#define FAIL() test_impl::impl::fail()
 
 struct move_only
 {

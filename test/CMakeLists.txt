@@ -36,6 +36,7 @@ endmacro()
 foreach(_x IN LISTS vrm_cmake_out)
 #{
     target_compile_options(${_x} PUBLIC "-fdiagnostics-color=always")
+    target_link_libraries(${_x} PUBLIC "pthread")
 
     # TODO: to utility functions in vrm_cmake? to option?
     if(DEFINED AUGMENT_TESTS AND NOT DEFINED WIN_MINGW_DEVEL)
