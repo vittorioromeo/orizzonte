@@ -10,12 +10,11 @@ list(APPEND CMAKE_MODULE_PATH
     "${CMAKE_SOURCE_DIR}/../vrm_cmake/cmake/"
     "${CMAKE_SOURCE_DIR}/extlibs/vrm_cmake/cmake/")
 
-include(vrm_cmake)
-
 # Basic project setup.
 project(orizzonte CXX)
 enable_testing()
 
+include(vrm_cmake)
 vrm_cmake_init_project_name_upper()
 vrm_cmake_init_project_source_dir()
 vrm_cmake_init_project_common_module_paths()

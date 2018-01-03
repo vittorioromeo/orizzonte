@@ -43,12 +43,20 @@ foreach(_x IN LISTS vrm_cmake_out)
     #{
         vrm_cmake_augment_test_asan(${_x})
         vrm_cmake_augment_test_ofast(${vrm_cmake_out})
+        target_link_libraries(${vrm_cmake_out} PUBLIC "pthread")
 
         vrm_cmake_augment_test_tsan(${_x})
         vrm_cmake_augment_test_ofast(${vrm_cmake_out})
+        target_link_libraries(${vrm_cmake_out} PUBLIC "pthread")
 
-        vrm_cmake_augment_test_ubsan(${_x})
-        vrm_cmake_augment_test_ofast(${vrm_cmake_out})
+        #if(NOT ${VRM_CMAKE_COMPILER_IS_CLANG})
+        if(false)
+        #{
+            vrm_cmake_augment_test_ubsan(${_x})
+            vrm_cmake_augment_test_ofast(${vrm_cmake_out})
+            target_link_libraries(${vrm_cmake_out} PUBLIC "pthread")
+        #}
+        endif()
     #}
     endif()
 #}

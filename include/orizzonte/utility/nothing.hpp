@@ -69,11 +69,12 @@ namespace orizzonte::utility
     // TODO: SFINAE-friendliness and `noexcept`-correctness
     // TODO: can this be done iteratively?
     /// @brief Invokes `f(x, xs...)`, skipping every argument that is `nothing`.
+    /// Also returns `nothing` instead of `void`.
     template <typename F, typename T, typename... Ts>
     constexpr decltype(auto) call_ignoring_nothing(F&& f, T&& x, Ts&&... xs)
     {
         return call_ignoring_nothing(
-            [&f, &x](auto&&... ys) -> decltype(auto) {
+            [&](auto&&... ys) -> decltype(auto) {
                 if constexpr(is_nothing_v<T>)
                 {
                     return FWD(f)(FWD(ys)...);
@@ -115,7 +116,7 @@ namespace orizzonte::utility
         {
         }
 
-// clang-format off
+        // clang-format off
         #define CALL_OPERATOR(ref_qual)                                                       \
         template <typename... Ts>                                                             \
         constexpr auto operator()(Ts&&... xs) ref_qual                                        \
