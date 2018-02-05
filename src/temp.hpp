@@ -58,6 +58,9 @@ private:
     template <typename Scheduler, typename Child, typename... Children>
     void walk_up(Scheduler&& s, Child& c, Children&... cs) &
     {
+        // We call `execute` on the first child of the `root`, passing
+        // `nothing{}` as the "input" and propagating the rest of the children
+        // on the call stack.
         c.execute(s, nothing{}, cs...);
     }
 };
@@ -97,12 +100,18 @@ public:
     template <typename... FThens>
     auto then(FThens&&... f_thens) &&
     {
+        // In order to create a continuation, a new node is created and `*this`
+        // is moved into it.
+
         if constexpr(sizeof...(FThens) == 1)
         {
+            // If there's only a single continuation, just create a "linear"
+            // node.
             return node{std::move(as_derived()), FWD(f_thens)...};
         }
         else
         {
+            // Multiple continuations spawn a "fork" node.
             return when_all{std::move(as_derived()), FWD(f_thens)...};
         }
     }
@@ -110,6 +119,9 @@ public:
     template <typename Scheduler, typename... Children>
     void walk_up(Scheduler&& s, Children&... cs) &
     {
+        // To move "up" the node chain we invoke `.walk_up` on the parent of the
+        // current node, passing `*this` as the first child and propagating
+        // `cs...` on the call stack.
         as_derived().as_parent().walk_up(s, as_derived(), cs...);
     }
 
