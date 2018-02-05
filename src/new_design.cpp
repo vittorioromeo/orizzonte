@@ -37,10 +37,10 @@ struct node_two : A, B
 {
     node_two(A&& a, B&& b) : A{std::move(a)}, B{std::move(b)} { }
 
-    template <typename Scheduler>
-    void execute(Scheduler& s)
+    template <typename Scheduler, typename... Ts>
+    void execute(Scheduler& s, Ts&&... xs)
     {
-        auto a_result = activate(s, static_cast<A&>(*this));
+        auto a_result = activate(s, static_cast<A&>(*this), FWD(xs)...);
         activate(s, static_cast<B&>(*this), std::move(a_result));
 
     }
@@ -93,6 +93,10 @@ int main()
 
     auto n0 = node_two{[]{ return 42; }, [](int x){ std::cout << "got " << x << '\n'; }};
     n0.execute(scheduler);
+
+    auto nx = node_two{[]{ return 42; }, node_two{[](int x){ std::cout << "got " << x << '\n'; return x + 1; },
+                                                  [](int x){ std::cout << "finalres: " << x << '\n'; }}};
+    nx.execute(scheduler);
 
     auto n1 = node_two{[]{ return 42; }, node_and{[](int x){ std::cout << "got " << x << '\n'; },
                                                   [](int x){ std::cout << "me too " << x << '\n'; }}};
