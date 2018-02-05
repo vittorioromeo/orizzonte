@@ -17,18 +17,22 @@
 
 #include "../include/orizzonte.hpp"
 
+// TODO:
 template <typename T, std::size_t N>
 struct aligned
 {
     alignas(N) T _x;
 };
 
+// TODO:
 template <typename... Ts>
 struct cache_aligned_tuple
 {
     static constexpr auto hardware_destructive_interference_size = 64;
     std::tuple<aligned<Ts, hardware_destructive_interference_size>...> _data;
 };
+
+
 
 using namespace orizzonte::utility;
 using namespace orizzonte::meta;
@@ -58,6 +62,8 @@ private:
     }
 };
 
+/// @brief Intended to be used as the base class of a child node. Stores the
+/// `Parent` node into a child and provides the `as_parent()` member function.
 template <typename Parent>
 class child_of : public Parent
 {
@@ -76,6 +82,8 @@ protected:
     }
 };
 
+/// @brief CRTP base class for a node. Provides member functions common to all
+/// node types.
 template <typename Derived>
 class node_base
 {
