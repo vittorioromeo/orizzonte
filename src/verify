@@ -1,0 +1,28 @@
+#!/bin/bash
+clear; clear;
+
+FLAGS='-std=c++1z -g -W -Wall -Wextra -Wpedantic -I/home/vittorioromeo/OHWorkspace/orizzonte/include -lpthread'
+
+fn()
+{
+	echo "$1 $2"
+	$1 $FLAGS -O0 -fsanitize=$2 -o "/tmp/$3.x" $4 && "/tmp/$3.x"
+	$1 $FLAGS -Ofast -fsanitize=$2 -o "/tmp/$3.x" $4 && "/tmp/$3.x"
+	echo "$1 $2 done"
+}
+
+(fn clang++ undefined x0 $1)
+(fn clang++ address x1 $1)
+(fn clang++ memory x2 $1)
+(fn clang++ thread x5 $1)
+
+# (fn g++ undefined x3 $1)
+# (fn g++ address x4 $1)
+# (fn g++ shift x5 $1)
+# (fn g++ integer-divide-by-zero x6 $1)
+# (fn g++ null x7 $1)
+# (fn g++ return x8 $1)
+# (fn g++ signed-integer-overflow x9 $1)
+# (fn g++ thread x10 $1)
+
+wait
