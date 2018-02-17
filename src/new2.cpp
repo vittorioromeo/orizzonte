@@ -86,8 +86,9 @@ struct node_and : Fs...
 {
     using in_type = std::common_type_t<typename Fs::in_type...>;
     using out_type = std::tuple<typename Fs::out_type...>;
+    using atomic_type = std::atomic<int>;
 
-    orizzonte::utility::movable_atomic<int> _left{sizeof...(Fs)};
+    orizzonte::utility::aligned_storage_for<atomic_type> _left_buf;
     orizzonte::utility::aligned_storage_for<in_type> _input_buf;
     out_type _values;
 
@@ -98,18 +99,19 @@ struct node_and : Fs...
     template <typename Scheduler, typename Input, typename Then>
     void execute(Scheduler& scheduler, Input&& input, Then&& then)
     {
-        // don't construct/destroy if lvalue?
+        // TODO: don't construct/destroy if lvalue?
         _input_buf.construct(FWD(input));
+        _left_buf.construct(sizeof...(Fs));
 
         auto doit = [&, then](auto i, auto& f) {
             scheduler([&, then] {
                 f.execute(scheduler, _input_buf.access(), [&](auto&& out) {
                     std::get<i>(_values) = out;
 
-                    if(_left.fetch_sub(1) == 1)
+                    if(_left_buf.access().fetch_sub(1) == 1)
                     {
                         _input_buf.destroy();
-                        then(_values);
+                        then(_values); // TODO: move?
                     }
                 });
             });
