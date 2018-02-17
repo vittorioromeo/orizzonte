@@ -177,7 +177,7 @@ int main()
     auto a1 = node_and{move(s3), move(s4)};
 
     auto top0 = node_seq{move(a0), leaf{in<std::tuple<int, int, int>>,
-                                       [](const std::tuple<int, int, int>& t) {
+                                       [](const auto& t) {
                                            cout << std::get<0>(t) << ", "
                                                 << std::get<1>(t) << ", "
                                                 << std::get<2>(t) << '\n';
@@ -185,7 +185,7 @@ int main()
                                        }}};
 
     auto top1 = node_seq{move(a1),
-        leaf{in<std::tuple<int, int>>, [](const std::tuple<int, int>& t) {
+        leaf{in<std::tuple<int, int>>, [](const auto& t) {
                  cout << std::get<0>(t) << ", " << std::get<1>(t) << '\n';
                  return -1;
              }}};
