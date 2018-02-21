@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <type_traits>
 #include <utility>
@@ -68,6 +69,99 @@ namespace orizzonte::utility
         /// @brief Invokes the destructor of the currently stored `T`. The
         /// behavior is undefined if a `T` instance wasn't successfully
         /// constructed beforehand.
+        void destroy()
+        {
+            assert_engaged();
+            access().~T();
+            set_unengaged();
+        }
+
+        /// @brief Pointer-like interface. Equivalent to invoking `access()`.
+        T& operator*() noexcept
+        {
+            return access();
+        }
+
+        /// @copydoc operator*
+        const T& operator*() const noexcept
+        {
+            return access();
+        }
+
+        /// @copydoc operator*
+        T* operator->() noexcept
+        {
+            return &access();
+        }
+
+        /// @copydoc operator*
+        const T* operator->() const noexcept
+        {
+            return &access();
+        }
+    };
+
+    // TODO: keep track of active index in debug mode
+    // TODO: assert T in Ts...
+    template <typename... Ts>
+    class aligned_union_for
+    {
+    private:
+        std::aligned_union_t<std::max({alignof(Ts)...}), Ts...> _storage;
+
+        // TODO: more portable
+#ifndef NDEBUG
+        bool _engaged{false};
+
+        // clang-format off
+        void set_engaged() noexcept      { _engaged = true; }
+        void set_unengaged() noexcept    { _engaged = false; }
+        void assert_engaged() noexcept   { assert(_engaged); }
+        void assert_unengaged() noexcept { assert(!_engaged); }
+        // clang-format on
+#else
+        // clang-format off
+        constexpr void set_engaged() noexcept      { }
+        constexpr void set_unengaged() noexcept    { }
+        constexpr void assert_engaged() noexcept   { }
+        constexpr void assert_unengaged() noexcept { }
+        // clang-format on
+#endif
+
+    public:
+        /// @brief Constructs a new instance of `T` in the storage using
+        /// perfect-forwarding and placement-new. The behavior is undefined if a
+        /// `T` instance was already constructed beforehand and not destroyed.
+        template <typename TFwd>
+        void construct(TFwd&& x)
+        {
+            assert_unengaged();
+            new(&_storage) std::decay_t<TFwd>(FWD(x));
+            set_engaged();
+        }
+
+        /// @brief Returns a reference to the stored `T`. The behavior is
+        /// undefined if a `T` instance wasn't successfully constructed
+        /// beforehand.
+        template <typename T>
+        T& access() noexcept
+        {
+            assert_engaged();
+            return reinterpret_cast<T&>(_storage);
+        }
+
+        /// @copydoc access
+        template <typename T>
+        const T& access() const noexcept
+        {
+            assert_engaged();
+            return reinterpret_cast<T&>(_storage);
+        }
+
+        /// @brief Invokes the destructor of the currently stored `T`. The
+        /// behavior is undefined if a `T` instance wasn't successfully
+        /// constructed beforehand.
+        template <typename T>
         void destroy()
         {
             assert_engaged();

@@ -1,0 +1,497 @@
+# %bb.0:
+	pushq	%r15
+	pushq	%r14
+	pushq	%r12
+	pushq	%rbx
+	subq	$104, %rsp
+	movq	$0, 56(%rsp)
+	movl	$0, 64(%rsp)
+	movq	$0, 76(%rsp)
+	movq	$0, 92(%rsp)
+	movq	$2, 84(%rsp)
+	movq	$0, 8(%rsp)
+	movl	$48, %edi
+	leaq	48(%rsp), %r12
+	movq	%r12, 16(%rax)
+	movq	%r12, 24(%rax)
+	leaq	16(%rsp), %r14
+	movq	%r14, 32(%rax)
+	leaq	24(%rsp), %r15
+	movq	%r15, 40(%rax)
+	movq	%rax, 32(%rsp)
+	leaq	8(%rsp), %rdi
+	leaq	32(%rsp), %rsi
+# %bb.1:
+	movq	32(%rsp), %rdi
+	testq	%rdi, %rdi
+# %bb.2:
+	movq	(%rdi), %rax
+	callq	*8(%rax)
+	leaq	8(%rsp), %rdi
+# %bb.4:
+	cmpq	$0, 8(%rsp)
+# %bb.12:
+	leaq	68(%rsp), %rbx
+	movq	$0, 8(%rsp)
+	movl	$48, %edi
+	movq	%r12, 16(%rax)
+	movq	%rbx, 24(%rax)
+	movq	%r14, 32(%rax)
+	movq	%r15, 40(%rax)
+	movq	%rax, 32(%rsp)
+	leaq	8(%rsp), %rdi
+	leaq	32(%rsp), %rsi
+# %bb.13:
+	movq	32(%rsp), %rdi
+	testq	%rdi, %rdi
+# %bb.14:
+	movq	(%rdi), %rax
+	callq	*8(%rax)
+	leaq	8(%rsp), %rdi
+# %bb.16:
+	cmpq	$0, 8(%rsp)
+# %bb.17:
+	movl	$2, %eax
+	movq	%rax, %xmm0
+	movdqa	%xmm0, 32(%rsp)
+	leaq	32(%rsp), %rbx
+	movq	%rbx, %rdi
+	movq	%rbx, %rsi
+	callq	nanosleep
+	cmpl	$-1, %eax
+	cmpl	$4, (%rax)
+	xorl	%eax, %eax
+	addq	$104, %rsp
+	popq	%rbx
+	popq	%r12
+	popq	%r14
+	popq	%r15
+	retq
+	movq	%rax, %rbx
+	cmpq	$0, 8(%rsp)
+	movq	%rax, %rbx
+	movq	32(%rsp), %rdi
+	testq	%rdi, %rdi
+	movq	%rax, %rbx
+	cmpq	$0, 8(%rsp)
+	movq	%rax, %rbx
+	movq	32(%rsp), %rdi
+	testq	%rdi, %rdi
+	movq	(%rdi), %rax
+	callq	*8(%rax)
+	movq	%rbx, %rdi
+# %bb.0:
+	pushq	%rbx
+	movq	%rdi, %rbx
+	movq	%rbx, %rdi
+	popq	%rbx
+# %bb.0:
+	pushq	%rbp
+	pushq	%r15
+	pushq	%r14
+	pushq	%r13
+	pushq	%r12
+	pushq	%rbx
+	subq	$24, %rsp
+	movq	16(%rdi), %r15
+	movq	24(%rdi), %rbx
+	movq	32(%rdi), %r14
+	movq	40(%rdi), %r12
+	leaq	8(%rdi), %r13
+	movq	$3, (%rbx)
+	movq	$0, (%rsp)
+	movl	$80, %edi
+	movq	%rbx, 8(%rax)
+	movq	%r14, 16(%rax)
+	movq	%r15, 24(%rax)
+	movq	%r12, 32(%rax)
+	movq	%r13, 40(%rax)
+	movq	%rbx, 48(%rax)
+	movq	%rbx, 56(%rax)
+	movq	%r14, 64(%rax)
+	leaq	16(%rsp), %rbp
+	movq	%rbp, 72(%rax)
+	movq	%rax, 8(%rsp)
+	movq	%rsp, %rdi
+	leaq	8(%rsp), %rsi
+# %bb.1:
+	movq	8(%rsp), %rdi
+	testq	%rdi, %rdi
+# %bb.2:
+	movq	(%rdi), %rax
+	callq	*8(%rax)
+	movq	%rsp, %rdi
+# %bb.4:
+	cmpq	$0, (%rsp)
+# %bb.12:
+	movq	$0, (%rsp)
+	movl	$80, %edi
+	movq	%rbx, 8(%rax)
+	movq	%r14, 16(%rax)
+	movq	%r15, 24(%rax)
+	movq	%r12, 32(%rax)
+	movq	%r13, 40(%rax)
+	movq	%rbx, 48(%rax)
+	movq	%rbx, 56(%rax)
+	movq	%r14, 64(%rax)
+	movq	%rbp, 72(%rax)
+	movq	%rax, 8(%rsp)
+	movq	%rsp, %rdi
+	leaq	8(%rsp), %rsi
+# %bb.13:
+	movq	8(%rsp), %rdi
+	testq	%rdi, %rdi
+# %bb.14:
+	movq	(%rdi), %rax
+	callq	*8(%rax)
+	movq	%rsp, %rdi
+# %bb.16:
+	cmpq	$0, (%rsp)
+# %bb.17:
+	movq	$0, (%rsp)
+	movl	$80, %edi
+	movq	%rbx, 8(%rax)
+	movq	%r14, 16(%rax)
+	movq	%r15, 24(%rax)
+	movq	%r12, 32(%rax)
+	movq	%r13, 40(%rax)
+	movq	%rbx, 48(%rax)
+	movq	%rbx, 56(%rax)
+	movq	%r14, 64(%rax)
+	movq	%rbp, 72(%rax)
+	movq	%rax, 8(%rsp)
+	movq	%rsp, %rdi
+	leaq	8(%rsp), %rsi
+# %bb.18:
+	movq	8(%rsp), %rdi
+	testq	%rdi, %rdi
+# %bb.19:
+	movq	(%rdi), %rax
+	callq	*8(%rax)
+	movq	%rsp, %rdi
+# %bb.21:
+	cmpq	$0, (%rsp)
+# %bb.22:
+	addq	$24, %rsp
+	popq	%rbx
+	popq	%r12
+	popq	%r13
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+	retq
+	movq	%rax, %rbx
+	cmpq	$0, (%rsp)
+	movq	%rax, %rbx
+	movq	8(%rsp), %rdi
+	testq	%rdi, %rdi
+	movq	%rax, %rbx
+	cmpq	$0, (%rsp)
+	movq	%rax, %rbx
+	movq	8(%rsp), %rdi
+	testq	%rdi, %rdi
+	movq	%rax, %rbx
+	cmpq	$0, (%rsp)
+	movq	%rax, %rbx
+	movq	8(%rsp), %rdi
+	testq	%rdi, %rdi
+	movq	(%rdi), %rax
+	callq	*8(%rax)
+	movq	%rbx, %rdi
+# %bb.0:
+	pushq	%rbx
+	movq	%rdi, %rbx
+	movq	%rbx, %rdi
+	popq	%rbx
+# %bb.0:
+	pushq	%r15
+	pushq	%r14
+	pushq	%rbx
+	subq	$16, %rsp
+	movq	%rdi, %r14
+	movq	48(%rdi), %r15
+	movl	$3, %edx
+	movl	$1, %edx
+	xorl	%esi, %esi
+	movl	$5, %edx
+	movq	%rax, %rdi
+	movl	$1, 16(%r15)
+	lock		subl	$1, (%r15)
+# %bb.1:
+	movl	16(%r15), %esi
+	movq	%rax, %rbx
+	movl	$2, %edx
+	movq	%rax, %rdi
+	movl	12(%r15), %esi
+	movq	%rbx, %rdi
+	movq	%rax, %rbx
+	movl	$2, %edx
+	movq	%rax, %rdi
+	movl	8(%r15), %esi
+	movq	%rbx, %rdi
+	movb	$10, 15(%rsp)
+	leaq	15(%rsp), %rsi
+	movl	$1, %edx
+	movq	%rax, %rdi
+	movq	24(%r14), %rax
+	movl	$-1, 48(%rax)
+	lock		subl	$1, 36(%rax)
+	addq	$16, %rsp
+	popq	%rbx
+	popq	%r14
+	popq	%r15
+	retq
+# %bb.0:
+	pushq	%rbx
+	movq	%rdi, %rbx
+	movq	%rbx, %rdi
+	popq	%rbx
+# %bb.0:
+	pushq	%r15
+	pushq	%r14
+	pushq	%rbx
+	subq	$16, %rsp
+	movq	%rdi, %r14
+	movq	48(%rdi), %r15
+	movl	$3, %edx
+	movl	$1, %edx
+	movl	$2, %esi
+	movl	$5, %edx
+	movq	%rax, %rdi
+	movl	$3, 12(%r15)
+	lock		subl	$1, (%r15)
+# %bb.1:
+	movl	16(%r15), %esi
+	movq	%rax, %rbx
+	movl	$2, %edx
+	movq	%rax, %rdi
+	movl	12(%r15), %esi
+	movq	%rbx, %rdi
+	movq	%rax, %rbx
+	movl	$2, %edx
+	movq	%rax, %rdi
+	movl	8(%r15), %esi
+	movq	%rbx, %rdi
+	movb	$10, 15(%rsp)
+	leaq	15(%rsp), %rsi
+	movl	$1, %edx
+	movq	%rax, %rdi
+	movq	24(%r14), %rax
+	movl	$-1, 48(%rax)
+	lock		subl	$1, 36(%rax)
+	addq	$16, %rsp
+	popq	%rbx
+	popq	%r14
+	popq	%r15
+	retq
+# %bb.0:
+	pushq	%rbx
+	movq	%rdi, %rbx
+	movq	%rbx, %rdi
+	popq	%rbx
+# %bb.0:
+	pushq	%r15
+	pushq	%r14
+	pushq	%rbx
+	subq	$16, %rsp
+	movq	%rdi, %r14
+	movq	48(%rdi), %r15
+	movl	$3, %edx
+	movl	$1, %edx
+	movl	$4, %esi
+	movl	$5, %edx
+	movq	%rax, %rdi
+	movl	$5, 8(%r15)
+	lock		subl	$1, (%r15)
+# %bb.1:
+	movl	16(%r15), %esi
+	movq	%rax, %rbx
+	movl	$2, %edx
+	movq	%rax, %rdi
+	movl	12(%r15), %esi
+	movq	%rbx, %rdi
+	movq	%rax, %rbx
+	movl	$2, %edx
+	movq	%rax, %rdi
+	movl	8(%r15), %esi
+	movq	%rbx, %rdi
+	movb	$10, 15(%rsp)
+	leaq	15(%rsp), %rsi
+	movl	$1, %edx
+	movq	%rax, %rdi
+	movq	24(%r14), %rax
+	movl	$-1, 48(%rax)
+	lock		subl	$1, 36(%rax)
+	addq	$16, %rsp
+	popq	%rbx
+	popq	%r14
+	popq	%r15
+	retq
+# %bb.0:
+	pushq	%rbx
+	movq	%rdi, %rbx
+	movq	%rbx, %rdi
+	popq	%rbx
+# %bb.0:
+	pushq	%rbp
+	pushq	%r15
+	pushq	%r14
+	pushq	%r13
+	pushq	%r12
+	pushq	%rbx
+	subq	$24, %rsp
+	movq	16(%rdi), %r15
+	movq	24(%rdi), %rbx
+	movq	32(%rdi), %r14
+	movq	40(%rdi), %r12
+	leaq	8(%rdi), %r13
+	movq	$2, (%rbx)
+	movq	$0, (%rsp)
+	movl	$80, %edi
+	movq	%rbx, 8(%rax)
+	movq	%r14, 16(%rax)
+	movq	%r15, 24(%rax)
+	movq	%r12, 32(%rax)
+	movq	%r13, 40(%rax)
+	movq	%rbx, 48(%rax)
+	movq	%rbx, 56(%rax)
+	movq	%r14, 64(%rax)
+	leaq	8(%rsp), %rbp
+	movq	%rbp, 72(%rax)
+	movq	%rax, 16(%rsp)
+	movq	%rsp, %rdi
+	leaq	16(%rsp), %rsi
+# %bb.1:
+	movq	16(%rsp), %rdi
+	testq	%rdi, %rdi
+# %bb.2:
+	movq	(%rdi), %rax
+	callq	*8(%rax)
+	movq	%rsp, %rdi
+# %bb.4:
+	cmpq	$0, (%rsp)
+# %bb.12:
+	movq	$0, (%rsp)
+	movl	$80, %edi
+	movq	%rbx, 8(%rax)
+	movq	%r14, 16(%rax)
+	movq	%r15, 24(%rax)
+	movq	%r12, 32(%rax)
+	movq	%r13, 40(%rax)
+	movq	%rbx, 48(%rax)
+	movq	%rbx, 56(%rax)
+	movq	%r14, 64(%rax)
+	movq	%rbp, 72(%rax)
+	movq	%rax, 16(%rsp)
+	movq	%rsp, %rdi
+	leaq	16(%rsp), %rsi
+# %bb.13:
+	movq	16(%rsp), %rdi
+	testq	%rdi, %rdi
+# %bb.14:
+	movq	(%rdi), %rax
+	callq	*8(%rax)
+	movq	%rsp, %rdi
+# %bb.16:
+	cmpq	$0, (%rsp)
+# %bb.17:
+	addq	$24, %rsp
+	popq	%rbx
+	popq	%r12
+	popq	%r13
+	popq	%r14
+	popq	%r15
+	popq	%rbp
+	retq
+	movq	%rax, %rbx
+	cmpq	$0, (%rsp)
+	movq	%rax, %rbx
+	movq	16(%rsp), %rdi
+	testq	%rdi, %rdi
+	movq	%rax, %rbx
+	cmpq	$0, (%rsp)
+	movq	%rax, %rbx
+	movq	16(%rsp), %rdi
+	testq	%rdi, %rdi
+	movq	(%rdi), %rax
+	callq	*8(%rax)
+	movq	%rbx, %rdi
+# %bb.0:
+	pushq	%rbx
+	movq	%rdi, %rbx
+	movq	%rbx, %rdi
+	popq	%rbx
+# %bb.0:
+	pushq	%r15
+	pushq	%r14
+	pushq	%rbx
+	subq	$16, %rsp
+	movq	%rdi, %r14
+	movq	48(%rdi), %rbx
+	movl	$3, %edx
+	movl	$1, %edx
+	movl	$6, %esi
+	movl	$5, %edx
+	movq	%rax, %rdi
+	movl	$7, 12(%rbx)
+	lock		subl	$1, (%rbx)
+# %bb.1:
+	movl	12(%rbx), %esi
+	movq	%rax, %r15
+	movl	$2, %edx
+	movq	%rax, %rdi
+	movl	8(%rbx), %esi
+	movq	%r15, %rdi
+	movb	$10, 15(%rsp)
+	leaq	15(%rsp), %rsi
+	movl	$1, %edx
+	movq	%rax, %rdi
+	movq	24(%r14), %rax
+	movl	$-1, 44(%rax)
+	lock		subl	$1, 36(%rax)
+	addq	$16, %rsp
+	popq	%rbx
+	popq	%r14
+	popq	%r15
+	retq
+# %bb.0:
+	pushq	%rbx
+	movq	%rdi, %rbx
+	movq	%rbx, %rdi
+	popq	%rbx
+# %bb.0:
+	pushq	%r15
+	pushq	%r14
+	pushq	%rbx
+	subq	$16, %rsp
+	movq	%rdi, %r14
+	movq	48(%rdi), %rbx
+	movl	$3, %edx
+	movl	$1, %edx
+	movl	$8, %esi
+	movl	$5, %edx
+	movq	%rax, %rdi
+	movl	$9, 8(%rbx)
+	lock		subl	$1, (%rbx)
+# %bb.1:
+	movl	12(%rbx), %esi
+	movq	%rax, %r15
+	movl	$2, %edx
+	movq	%rax, %rdi
+	movl	8(%rbx), %esi
+	movq	%r15, %rdi
+	movb	$10, 15(%rsp)
+	leaq	15(%rsp), %rsi
+	movl	$1, %edx
+	movq	%rax, %rdi
+	movq	24(%r14), %rax
+	movl	$-1, 44(%rax)
+	lock		subl	$1, 36(%rax)
+	addq	$16, %rsp
+	popq	%rbx
+	popq	%r14
+	popq	%r15
+	retq
+# %bb.0:
+	pushq	%rax
+	popq	%rax
