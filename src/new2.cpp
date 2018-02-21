@@ -41,7 +41,7 @@ struct leaf : F
     using in_type = In;
     using out_type = decltype(std::declval<F&>()(std::declval<in_type>()));
 
-    leaf(in_t<In>, F&& f) : F{std::move(f)}
+    constexpr leaf(in_t<In>, F&& f) : F{std::move(f)}
     {
     }
 
@@ -60,7 +60,7 @@ struct node_seq : A, B
     using in_type = typename A::in_type;
     using out_type = typename B::out_type;
 
-    node_seq(A&& a, B&& b) : A{std::move(a)}, B{std::move(b)}
+    constexpr node_seq(A&& a, B&& b) : A{std::move(a)}, B{std::move(b)}
     {
     }
 
@@ -77,6 +77,28 @@ struct node_seq : A, B
 
 template <typename...>
 using int_t = int;
+
+template <bool B, typename Scheduler, typename F>
+void schedule_if(Scheduler& scheduler, F&& f)
+{
+    if constexpr(B)
+    {
+        FWD(f)();
+    }
+    else
+    {
+        // The computation has to be moved here as it will die at
+        // the end of the `enumerate_args` lambda scope.
+        scheduler([g = std::move(f)]() mutable { g(); });
+    }
+}
+
+template <typename... Xs, typename Index, typename Scheduler, typename F>
+void schedule_if_last(Index, Scheduler& scheduler, F&& f)
+{
+    constexpr bool is_last = Index{} == sizeof...(Xs) - 1;
+    schedule_if<is_last>(scheduler, FWD(f));
+}
 
 template <typename... Fs>
 struct node_and : Fs...
@@ -100,23 +122,8 @@ struct node_and : Fs...
     // TODO: padding
     out_type _values;
 
-    node_and(Fs&&... fs) : Fs{std::move(fs)}...
+    constexpr node_and(Fs&&... fs) : Fs{std::move(fs)}...
     {
-    }
-
-    template <bool B, typename Scheduler, typename F>
-    void schedule_if(Scheduler& s, F&& f)
-    {
-        if constexpr(B)
-        {
-            FWD(f)();
-        }
-        else
-        {
-            // The computation has to be moved here as it will die at
-            // the end of the `enumerate_args` lambda scope.
-            s([g = std::move(f)]() mutable { g(); });
-        }
     }
 
     template <typename Scheduler, typename Input, typename Then>
@@ -142,8 +149,7 @@ struct node_and : Fs...
                     });
                 };
 
-                constexpr bool is_last = decltype(i){} == sizeof...(Fs) - 1;
-                schedule_if<is_last>(scheduler, std::move(computation));
+                schedule_if_last<Fs...>(i, scheduler, std::move(computation));
             },
             orizzonte::meta::t<Fs>...);
     }
@@ -189,23 +195,8 @@ struct node_any : Fs...
     // TODO: padding
     out_type _values;
 
-    node_any(Fs&&... fs) : Fs{std::move(fs)}...
+    constexpr node_any(Fs&&... fs) : Fs{std::move(fs)}...
     {
-    }
-
-    template <bool B, typename Scheduler, typename F>
-    void schedule_if(Scheduler& s, F&& f)
-    {
-        if constexpr(B)
-        {
-            FWD(f)();
-        }
-        else
-        {
-            // The computation has to be moved here as it will die at
-            // the end of the `enumerate_args` lambda scope.
-            s([g = std::move(f)]() mutable { g(); });
-        }
     }
 
     template <typename Scheduler, typename Input, typename Then>
@@ -233,8 +224,7 @@ struct node_any : Fs...
                     });
                 };
 
-                constexpr bool is_last = decltype(i){} == sizeof...(Fs) - 1;
-                schedule_if<is_last>(scheduler, std::move(computation));
+                schedule_if_last<Fs...>(i, scheduler, std::move(computation));
             },
             orizzonte::meta::t<Fs>...);
     }
