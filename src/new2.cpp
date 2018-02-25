@@ -32,7 +32,7 @@ struct do_nothing final
     {
     }
 };
-
+//ok youre probably going to ignore this and block me from this repo, but id like to know, have you stopped working on open hexagon/given up on it/taken a break from it for 1.8e308 years
 inline constexpr do_nothing do_nothing_v{};
 
 template <typename In, typename F>
