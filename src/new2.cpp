@@ -8,6 +8,7 @@
 #include <tuple>
 #include <utility>
 
+// TODO: define executor interface/concept
 struct S
 {
     template <typename F>
@@ -25,7 +26,7 @@ struct in_t
 template <typename T>
 inline constexpr in_t<T> in{};
 
-struct do_nothing final
+struct do_nothing
 {
     template <typename... Ts>
     constexpr void operator()(Ts&&...) const noexcept
@@ -46,10 +47,10 @@ struct leaf : F
     }
 
     template <typename Scheduler, typename Input, typename Then>
-    void execute(
-        Scheduler& scheduler, Input&& input, Then&& then = do_nothing_v)
+    void execute(Scheduler&, Input&& input, Then&& then = do_nothing_v)
     {
-        (void)scheduler;
+        // A `leaf` doesn't schedule a computation on a separate thread by
+        // default. The parent of the `leaf` takes care of this if desired.
         FWD(then)((*this)(FWD(input)));
     }
 };
@@ -68,15 +69,15 @@ struct node_seq : A, B
     void execute(
         Scheduler& scheduler, Input&& input, Then&& then = do_nothing_v)
     {
+        // A `node_seq` doesn't schedule a computation on a separate thread by
+        // default. `A` could however be executed asynchronously - arguments to
+        // this function need to be captured inside the closure passed to `A`.
         static_cast<A&>(*this).execute(
             scheduler, FWD(input), [this, &scheduler, then](auto&& out) {
                 static_cast<B&>(*this).execute(scheduler, out, then);
             });
     }
 };
-
-template <typename...>
-using int_t = int;
 
 template <bool B, typename Scheduler, typename F>
 void schedule_if(Scheduler& scheduler, F&& f)
@@ -177,6 +178,8 @@ template <typename... Fs>
 struct node_any : Fs...
 {
     using in_type = std::common_type_t<typename Fs::in_type...>;
+
+    // TODO: if they're all the same type, no need for variant
     using out_type = boost::variant<typename Fs::out_type...>;
 
     struct shared_state
