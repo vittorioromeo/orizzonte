@@ -13,7 +13,7 @@ fn()
 
 tmux split-window -h "./verify_one clang++ undefined x0 $1"
 tmux split-window -h "./verify_one clang++ address x1 $1"
-tmux split-window -h "./verify_one clang++ memory x2 $1"
+# tmux split-window -h "./verify_one clang++ memory x2 $1"
 tmux split-window -h "./verify_one clang++ thread x5 $1"
 tmux select-layout main-horizontal
 tmux select-pane -t 0

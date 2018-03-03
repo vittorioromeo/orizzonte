@@ -46,7 +46,7 @@ namespace orizzonte::utility
         void construct(TFwd&& x)
         {
             assert_unengaged();
-            new(&_storage) std::decay_t<TFwd>(FWD(x));
+            new(&_storage) T(FWD(x));
             set_engaged();
         }
 
@@ -136,7 +136,8 @@ namespace orizzonte::utility
         void construct(TFwd&& x)
         {
             assert_unengaged();
-            new(&_storage) std::decay_t<TFwd>(FWD(x));
+            (void) x;
+            // new(&_storage) std::decay_t<TFwd>(FWD(x));
             set_engaged();
         }
 

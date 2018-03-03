@@ -8,6 +8,8 @@
 #include <tuple>
 #include <utility>
 
+namespace ou = orizzonte::utility;
+
 // TODO: define executor interface/concept
 struct S
 {
@@ -36,11 +38,13 @@ struct do_nothing
 
 inline constexpr do_nothing do_nothing_v{};
 
+
+
 template <typename In, typename F>
 struct leaf : F
 {
     using in_type = In;
-    using out_type = decltype(std::declval<F&>()(std::declval<in_type>()));
+    using out_type = ou::result_of_ignoring_nothing_t<F&, in_type>;
 
     constexpr leaf(in_t<In>, F&& f) : F{std::move(f)}
     {
@@ -51,7 +55,7 @@ struct leaf : F
     {
         // A `leaf` doesn't schedule a computation on a separate thread by
         // default. The parent of the `leaf` takes care of this if desired.
-        FWD(then)((*this)(FWD(input)));
+        FWD(then)(ou::call_ignoring_nothing(*this, FWD(input)));
     }
 };
 
@@ -217,12 +221,19 @@ struct node_any : Fs...
                         const auto old_left = _state->_left.fetch_sub(1);
                         if(old_left == sizeof...(Fs))
                         {
+                            // TODO: huge issue: when one of the computations
+                            // finishes, `then` is called with unblocks the
+                            // latch and destroys the whole graph on the stack
+                            // Need to find a way to keep the graph alive until
+                            // all computations here have finished
+                            // Idea: overload `then` on "final" and "non-final"
+                            // states probably doesnt work Idea: walk over the
+                            // graph and count nodes or something, have counter
+                            // decrement on then
+
                             _values = out;
                             then(_values); // TODO: move?
-                        }
-                        else if(old_left == 1)
-                        {
-                            _state.destroy();
+                            // _state.destroy();
                         }
                     });
                 };
@@ -268,36 +279,76 @@ auto& get(const boost::variant<Ts...>& v)
     return boost::get<target>(v);
 }
 
+template <typename Scheduler, typename Computation, typename Input>
+void execute_and_block(Scheduler& s, Computation&& c, Input&& input)
+{
+    orizzonte::utility::scoped_bool_latch l;
+    FWD(c).execute(s, FWD(input), [&](auto&&...) { l.count_down(); });
+}
+
+void t0()
+{
+    auto scheduler = S{};
+
+    auto l0 = [] {};
+    auto l1 = [] {};
+    auto l2 = [] {};
+
+    auto s0 = node_seq{leaf{in<ou::nothing>, std::move(l0)},
+        leaf{in<ou::nothing>, std::move(l1)}};
+
+    auto s1 = node_seq{std::move(s0), leaf{in<ou::nothing>, std::move(l2)}};
+    execute_and_block(scheduler, s1, ou::nothing{});
+}
+
+void t1()
+{
+    auto scheduler = S{};
+
+    auto l0 = [] {};
+    auto l1 = [] { return 42; };
+    auto l2 = [](int x) { assert(x == 42); };
+
+    auto s0 = node_seq{leaf{in<ou::nothing>, std::move(l0)},
+        leaf{in<ou::nothing>, std::move(l1)}};
+
+    auto s1 = node_seq{std::move(s0), leaf{in<int>, std::move(l2)}};
+    execute_and_block(scheduler, s1, ou::nothing{});
+}
+
 int main()
 {
+    t0();
+    t1();
 
     using namespace std;
     auto scheduler = S{};
 
     // clang-format off
-    auto l0 = [](int)   { cout <<               "l0\n"; return 0; };
+    auto l0 = []()      { cout <<               "l0\n"; return 0; };
     auto l1 = [](int x) { cout << "(" << x << ") l1\n"; return 1; };
 
-    auto l2 = [](int)   { cout <<               "l2\n"; return 2; };
+    auto l2 = []()      { cout <<               "l2\n"; return 2; };
     auto l3 = [](int x) { cout << "(" << x << ") l3\n"; return 3; };
 
-    auto l4 = [](int)   { cout <<               "l4\n"; return 4; };
+    auto l4 = []()      { cout <<               "l4\n"; return 4; };
     auto l5 = [](int x) { cout << "(" << x << ") l5\n"; return 5; };
 
-    auto l6 = [](int)   { cout <<               "l6\n"; return 6; };
+    auto l6 = []()      { cout <<               "l6\n"; return 6; };
     auto l7 = [](int x) { cout << "(" << x << ") l7\n"; return 7; };
 
-    auto l8 = [](int)   { cout <<               "l8\n"; return 8; };
+    auto l8 = []()      { cout <<               "l8\n"; return 8; };
     auto l9 = [](int x) { cout << "(" << x << ") l9\n"; return 9; };
     // clang-format on
 
+    using namespace orizzonte::utility;
 
-    auto s0 = node_seq{leaf{in<int>, move(l0)}, leaf{in<int>, move(l1)}};
-    auto s1 = node_seq{leaf{in<int>, move(l2)}, leaf{in<int>, move(l3)}};
-    auto s2 = node_seq{leaf{in<int>, move(l4)}, leaf{in<int>, move(l5)}};
+    auto s0 = node_seq{leaf{in<nothing>, move(l0)}, leaf{in<int>, move(l1)}};
+    auto s1 = node_seq{leaf{in<nothing>, move(l2)}, leaf{in<int>, move(l3)}};
+    auto s2 = node_seq{leaf{in<nothing>, move(l4)}, leaf{in<int>, move(l5)}};
 
-    auto s3 = node_seq{leaf{in<int>, move(l6)}, leaf{in<int>, move(l7)}};
-    auto s4 = node_seq{leaf{in<int>, move(l8)}, leaf{in<int>, move(l9)}};
+    auto s3 = node_seq{leaf{in<nothing>, move(l6)}, leaf{in<int>, move(l7)}};
+    auto s4 = node_seq{leaf{in<nothing>, move(l8)}, leaf{in<int>, move(l9)}};
 
     auto a0 = node_any{move(s0), move(s1), move(s2)};
     auto a1 = node_and{move(s3), move(s4)};
@@ -316,7 +367,5 @@ int main()
              }}};
 
     auto total = node_and{std::move(top0), std::move(top1)};
-    total.execute(scheduler, 0, [](auto&&...) {});
-
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    execute_and_block(scheduler, total, ou::nothing{});
 }

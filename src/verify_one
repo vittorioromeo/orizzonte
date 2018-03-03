@@ -3,5 +3,7 @@ FLAGS='-std=c++1z -g -W -Wall -Wextra -Wpedantic -I/home/vittorioromeo/OHWorkspa
 
 echo "$1 $2"
 $1 $FLAGS -O0 -fsanitize=$2 -o "/tmp/$3.x" $4 && "/tmp/$3.x"
+echo "$1 $2 opt"
 $1 $FLAGS -DNDEBUG -Ofast -fsanitize=$2 -o "/tmp/$3.x" $4 && "/tmp/$3.x"
 echo "$1 $2 done"
+read
