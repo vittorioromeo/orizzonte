@@ -28,16 +28,6 @@ struct in_t
 template <typename T>
 inline constexpr in_t<T> in{};
 
-struct do_nothing
-{
-    template <typename... Ts>
-    constexpr void operator()(Ts&&...) const noexcept
-    {
-    }
-};
-
-inline constexpr do_nothing do_nothing_v{};
-
 
 
 template <typename In, typename F>
@@ -50,12 +40,14 @@ struct leaf : F
     {
     }
 
-    template <typename Scheduler, typename Input, typename Then>
-    void execute(Scheduler&, Input&& input, Then&& then = do_nothing_v)
+    template <typename Scheduler, typename Input, typename Then, typename Step>
+    void execute(Scheduler&, Input&& input, Then&& then = ou::noop_v,
+        Step&& step = ou::noop_v)
     {
         // A `leaf` doesn't schedule a computation on a separate thread by
         // default. The parent of the `leaf` takes care of this if desired.
         FWD(then)(ou::call_ignoring_nothing(*this, FWD(input)));
+        FWD(step)();
     }
 };
 
@@ -65,21 +57,40 @@ struct node_seq : A, B
     using in_type = typename A::in_type;
     using out_type = typename B::out_type;
 
+    struct shared_state
+    {
+        std::atomic<int> _left;
+    };
+
+    orizzonte::utility::aligned_storage_for<shared_state> _state;
+
     constexpr node_seq(A&& a, B&& b) : A{std::move(a)}, B{std::move(b)}
     {
     }
 
-    template <typename Scheduler, typename Input, typename Then>
-    void execute(
-        Scheduler& scheduler, Input&& input, Then&& then = do_nothing_v)
+    template <typename Scheduler, typename Input, typename Then, typename Step>
+    void execute(Scheduler& scheduler, Input&& input, Then&& then = ou::noop_v,
+        Step&& step = ou::noop_v)
     {
+        _state.construct();
+        _state->_left = 2;
+
+        auto halfstep = [this, step] {
+            if(_state->_left.fetch_sub(1) == 1)
+            {
+                step();
+                _state.destroy();
+            }
+        };
+
         // A `node_seq` doesn't schedule a computation on a separate thread by
         // default. `A` could however be executed asynchronously - arguments to
         // this function need to be captured inside the closure passed to `A`.
-        static_cast<A&>(*this).execute(
-            scheduler, FWD(input), [this, &scheduler, then](auto&& out) {
-                static_cast<B&>(*this).execute(scheduler, out, then);
-            });
+        static_cast<A&>(*this).execute(scheduler, FWD(input),
+            [this, &scheduler, then, halfstep](auto&& out) {
+                static_cast<B&>(*this).execute(scheduler, out, then, halfstep);
+            },
+            halfstep);
     }
 };
 
@@ -106,7 +117,7 @@ void schedule_if_last(Index, Scheduler& scheduler, F&& f)
 }
 
 template <typename... Fs>
-struct node_and : Fs...
+struct node_all : Fs...
 {
     using in_type = std::common_type_t<typename Fs::in_type...>;
     using out_type = std::tuple<typename Fs::out_type...>;
@@ -127,12 +138,12 @@ struct node_and : Fs...
     // TODO: padding
     out_type _values;
 
-    constexpr node_and(Fs&&... fs) : Fs{std::move(fs)}...
+    constexpr node_all(Fs&&... fs) : Fs{std::move(fs)}...
     {
     }
 
-    template <typename Scheduler, typename Input, typename Then>
-    void execute(Scheduler& scheduler, Input&& input, Then&& then)
+    template <typename Scheduler, typename Input, typename Then, typename Step>
+    void execute(Scheduler& scheduler, Input&& input, Then&& then, Step&& step)
     {
         // TODO: don't construct/destroy if lvalue?
         _state.construct(FWD(input));
@@ -141,17 +152,29 @@ struct node_and : Fs...
             [&](auto i, auto t) {
                 auto& f =
                     static_cast<orizzonte::meta::unwrap<decltype(t)>&>(*this);
-                auto computation = [&, then /* TODO: fwd capture */] {
-                    f.execute(scheduler, _state->_input, [&](auto&& out) {
-                        // TODO: padded tuple
-                        std::get<i>(_values) = out;
+                auto computation = [&, this, then,
+                                       step /* TODO: fwd capture */] {
+                    f.execute(scheduler, _state->_input,
+                        [&](auto&& out) {
+                            // TODO: padded tuple
+                            std::get<i>(_values) = FWD(out);
 
-                        if(_state->_left.fetch_sub(1) == 1)
-                        {
-                            _state.destroy();
-                            then(_values); // TODO: move?
-                        }
-                    });
+                            if(_state->_left.fetch_sub(1) == 1)
+                            {
+                                // std::cout << "THEN ALL\n";
+                                then(_values); // TODO: move?
+                            }
+                        },
+                        [&, this, step] {
+                            int expected = 0;
+                            if(_state->_left.compare_exchange_strong(
+                                   expected, -1))
+                            {
+                                // std::cout << "STEP ALL\n";
+                                step();
+                                // _state.destroy();
+                            }
+                        });
                 };
 
                 schedule_if_last<Fs...>(i, scheduler, std::move(computation));
@@ -206,8 +229,8 @@ struct node_any : Fs...
     {
     }
 
-    template <typename Scheduler, typename Input, typename Then>
-    void execute(Scheduler& scheduler, Input&& input, Then&& then)
+    template <typename Scheduler, typename Input, typename Then, typename Step>
+    void execute(Scheduler& scheduler, Input&& input, Then&& then, Step&& step)
     {
         // TODO: don't construct/destroy if lvalue?
         _state.construct(FWD(input));
@@ -216,26 +239,38 @@ struct node_any : Fs...
             [&](auto i, auto t) {
                 auto& f =
                     static_cast<orizzonte::meta::unwrap<decltype(t)>&>(*this);
-                auto computation = [&, then /* TODO: fwd capture */] {
-                    f.execute(scheduler, _state->_input, [&](auto&& out) {
-                        const auto old_left = _state->_left.fetch_sub(1);
-                        if(old_left == sizeof...(Fs))
-                        {
-                            // TODO: huge issue: when one of the computations
-                            // finishes, `then` is called with unblocks the
-                            // latch and destroys the whole graph on the stack
-                            // Need to find a way to keep the graph alive until
-                            // all computations here have finished
-                            // Idea: overload `then` on "final" and "non-final"
-                            // states probably doesnt work Idea: walk over the
-                            // graph and count nodes or something, have counter
-                            // decrement on then
+                auto computation = [&, then, step /* TODO: fwd capture */] {
+                    f.execute(scheduler, _state->_input,
+                        [&](auto&& out) {
+                            const auto old_left = _state->_left.fetch_sub(1);
+                            if(old_left == sizeof...(Fs))
+                            {
+                                // TODO: huge issue: when one of the
+                                // computations finishes, `then` is called with
+                                // unblocks the latch and destroys the whole
+                                // graph on the stack Need to find a way to keep
+                                // the graph alive until all computations here
+                                // have finished Idea: overload `then` on
+                                // "final" and "non-final" states probably
+                                // doesnt work Idea: walk over the graph and
+                                // count nodes or something, have counter
+                                // decrement on then
 
-                            _values = out;
-                            then(_values); // TODO: move?
-                            // _state.destroy();
-                        }
-                    });
+                                _values = out;
+                                // std::cout << "THEN ANY\n";
+                                then(_values); // TODO: move?
+                            }
+                        },
+                        [&, this, step] {
+                            int expected = 0;
+                            if(_state->_left.compare_exchange_strong(
+                                   expected, -1))
+                            {
+                                // std::cout << "STEP ANY\n";
+                                // _state.destroy();
+                                step();
+                            }
+                        });
                 };
 
                 schedule_if_last<Fs...>(i, scheduler, std::move(computation));
@@ -283,7 +318,8 @@ template <typename Scheduler, typename Computation, typename Input>
 void execute_and_block(Scheduler& s, Computation&& c, Input&& input)
 {
     orizzonte::utility::scoped_bool_latch l;
-    FWD(c).execute(s, FWD(input), [&](auto&&...) { l.count_down(); });
+    FWD(c).execute(s, FWD(input), [](auto&&...) {}, [&] { l.count_down(); });
+    // std::cout << "DONE\n";
 }
 
 void t0()
@@ -316,11 +352,127 @@ void t1()
     execute_and_block(scheduler, s1, ou::nothing{});
 }
 
-int main()
-{
-    t0();
-    t1();
+#define ENSURE(...)       \
+    if(!(__VA_ARGS__))    \
+    {                     \
+        std::terminate(); \
+    }
 
+
+
+void t2()
+{
+    auto scheduler = S{};
+
+    std::atomic<int> ctr = 0;
+
+    auto l0 = [&] {
+        ++ctr;
+        return 0;
+    };
+    auto l1 = [&] {
+        ++ctr;
+        return 1;
+    };
+    auto l2 = [&] {
+        ++ctr;
+        return 2;
+    };
+
+    auto total = node_all{//
+        leaf{in<ou::nothing>, std::move(l0)},
+        leaf{in<ou::nothing>, std::move(l1)},
+        leaf{in<ou::nothing>, std::move(l2)}};
+
+    execute_and_block(scheduler, total, ou::nothing{});
+
+    ENSURE(ctr == 3);
+}
+
+void t3()
+{
+    auto scheduler = S{};
+
+    std::atomic<int> ctr = 0;
+
+    auto l0 = [] { return 0; };
+    auto l1 = [] { return 1; };
+    auto l2 = [] { return 2; };
+
+    auto cp0 = [&](int x) { ctr += x; };
+    auto cp1 = [&](int x) { ctr += x; };
+    auto cp2 = [&](int x) { ctr += x; };
+
+    auto lf0 = leaf{in<ou::nothing>, std::move(l0)};
+    auto lf1 = leaf{in<ou::nothing>, std::move(l1)};
+    auto lf2 = leaf{in<ou::nothing>, std::move(l2)};
+
+    auto total = node_any{//
+        node_seq{std::move(lf0), leaf{in<int>, std::move(cp0)}},
+        node_seq{std::move(lf1), leaf{in<int>, std::move(cp1)}},
+        node_seq{std::move(lf2), leaf{in<int>, std::move(cp2)}}};
+
+    execute_and_block(scheduler, total, ou::nothing{});
+
+    ENSURE(ctr == 3);
+}
+
+void t4()
+{
+    auto scheduler = S{};
+
+    std::atomic<int> ctr = 0;
+
+    auto l0 = [] { return 0; };
+    auto l1 = [] { return 1; };
+    auto l2 = [] { return 2; };
+
+    auto cp0 = [&](int x) { ctr += x; };
+    auto cp1 = [&](int x) { ctr += x; };
+    auto cp2 = [&](int x) { ctr += x; };
+
+    auto lf0 = leaf{in<ou::nothing>, std::move(l0)};
+    auto lf1 = leaf{in<ou::nothing>, std::move(l1)};
+    auto lf2 = leaf{in<ou::nothing>, std::move(l2)};
+
+    auto top0 = node_any{//
+        node_seq{std::move(lf0), leaf{in<int>, std::move(cp0)}},
+        node_seq{std::move(lf1), leaf{in<int>, std::move(cp1)}},
+        node_seq{std::move(lf2), leaf{in<int>, std::move(cp2)}}};
+
+    auto total = node_seq{std::move(top0),
+        leaf{in<boost::variant<int, int, int>>, [](const auto&) {}}};
+
+    execute_and_block(scheduler, total, ou::nothing{});
+
+    // std::cout <<"ctr: " << ctr << '\n';
+    // ENSURE(ctr == 3);
+}
+
+void t5()
+{
+    auto scheduler = S{};
+
+    std::atomic<int> ctr = 0;
+
+    auto top0 = node_any{//
+        leaf{in<int>,
+            [&](int x) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                ctr += x;
+            }},
+        leaf{in<int>, [&](int x) { ctr += x; }}};
+
+    auto total =
+        node_seq{leaf{in<ou::nothing>, [] { return 0; }}, std::move(top0)};
+
+    execute_and_block(scheduler, total, ou::nothing{});
+
+    // ENSURE(ctr == 2);
+}
+
+void t9()
+{
     using namespace std;
     auto scheduler = S{};
 
@@ -351,14 +503,10 @@ int main()
     auto s4 = node_seq{leaf{in<nothing>, move(l8)}, leaf{in<int>, move(l9)}};
 
     auto a0 = node_any{move(s0), move(s1), move(s2)};
-    auto a1 = node_and{move(s3), move(s4)};
+    auto a1 = node_all{move(s3), move(s4)};
 
-    auto top0 = node_seq{
-        move(a0), leaf{in<boost::variant<int, int, int>>, [](const auto& t) {
-                           cout << get<0>(t) << ", " << get<1>(t) << ", "
-                                << get<2>(t) << '\n';
-                           return -1;
-                       }}};
+    auto top0 = node_seq{move(a0), leaf{in<boost::variant<int, int, int>>,
+                                       [](const auto&) { return -1; }}};
 
     auto top1 = node_seq{move(a1),
         leaf{in<std::tuple<int, int>>, [](const auto& t) {
@@ -366,6 +514,24 @@ int main()
                  return -1;
              }}};
 
-    auto total = node_and{std::move(top0), std::move(top1)};
+    auto total = node_all{std::move(top0), std::move(top1)};
     execute_and_block(scheduler, total, ou::nothing{});
+    // this_thread::sleep_for(chrono::milliseconds(1));
+}
+
+int main()
+{
+#define DO_T(n)                  \
+                                 \
+    std::cout << "t" #n "\n";    \
+    for(int i = 0; i < 1000; ++i) \
+        t##n();                  \
+    std::cout << "t" #n "end\n";
+
+    DO_T(1);
+    DO_T(2);
+    DO_T(3);
+    DO_T(4);
+    DO_T(5);
+    //DO_T(9);
 }

@@ -8,4 +8,5 @@
 #include "./utility/bool_latch.hpp"
 #include "./utility/fwd.hpp"
 #include "./utility/movable_atomic.hpp"
+#include "./utility/noop.hpp"
 #include "./utility/nothing.hpp"
