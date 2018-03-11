@@ -1,3 +1,3 @@
 #!/bin/bash
-FLAGS='-std=c++1z -g -W -Wall -Wextra -Wpedantic -I/home/vittorioromeo/OHWorkspace/orizzonte/include -lpthread'
+FLAGS='-std=c++2a -g -W -Wall -Wextra -Wpedantic -I/home/vittorioromeo/OHWorkspace/orizzonte/include -lpthread'
 clang++ $1 $FLAGS -O0 -o "/tmp/$1.x" $4 && "/tmp/$1.x"
