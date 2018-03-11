@@ -102,6 +102,10 @@ void fuzzy()
 
 int main()
 {
+  std::cout << sizeof(std::tuple<int>) << " " << sizeof(orizzonte::utility::cache_aligned_tuple<int>) << '\n';
+
+  return 0;
+
     fuzzy();
 
     {

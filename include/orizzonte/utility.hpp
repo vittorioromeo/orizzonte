@@ -6,6 +6,7 @@
 
 #include "./utility/aligned_storage.hpp"
 #include "./utility/bool_latch.hpp"
+#include "./utility/cache_aligned_tuple.hpp"
 #include "./utility/fwd.hpp"
 #include "./utility/movable_atomic.hpp"
 #include "./utility/noop.hpp"

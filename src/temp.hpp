@@ -29,7 +29,7 @@ template <typename... Ts>
 struct cache_aligned_tuple
 {
     static constexpr auto hardware_destructive_interference_size = 64;
-    std::tuple<aligned<Ts, hardware_destructive_interference_size>...> _data;
+    std::tuple<aligned<Ts,hardware_destructive_interference_size>...> _data;
 };
 
 
