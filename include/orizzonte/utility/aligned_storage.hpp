@@ -20,7 +20,7 @@ namespace orizzonte::utility
         std::aligned_storage_t<sizeof(T), alignof(T)> _storage;
 
         // TODO: more portable
-#if 0
+#ifndef DNDEBUG
         bool _engaged{false};
 
         // clang-format off

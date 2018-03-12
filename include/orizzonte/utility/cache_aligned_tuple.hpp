@@ -102,3 +102,5 @@ namespace orizzonte::utility
         return FWD(tuple).template get<I>();
     }
 } // namespace orizzonte::utility
+
+#define ORIZZONTE_CACHE_ALIGNED alignas(::orizzonte::utility::cache_line_size)

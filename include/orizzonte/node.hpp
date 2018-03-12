@@ -4,6 +4,8 @@
 
 #pragma once
 
-#include "./orizzonte/meta.hpp"
-#include "./orizzonte/node.hpp"
-#include "./orizzonte/utility.hpp"
+#include "./node/all.hpp"
+#include "./node/any.hpp"
+#include "./node/helper.hpp"
+#include "./node/leaf.hpp"
+#include "./node/seq.hpp"
