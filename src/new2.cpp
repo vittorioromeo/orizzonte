@@ -97,30 +97,38 @@ void t2()
 
 void t6()
 {
+std::cout << "t6 start\n";
+
     auto scheduler = S{};
 
-    orizzonte::utility::int_latch l{4};
+    orizzonte::utility::int_latch l{2};
 
-    auto l0 = [&] {
-        l.count_down();
-        return 0;
-    };
-    auto l1 = [&] {
-        l.count_down();
-        return 1;
-    };
+    //auto l0 = [&] {
+    //    l.count_down();
+    //    return 0;
+    //};
+    //auto l1 = [&] {
+    //    l.count_down();
+    //    return 1;
+    //};
     auto l2 = [&] {
         l.count_down();
         return 2;
     };
-
+    {
     auto total = any{                  //
-        leaf{in<void>, std::move(l0)}, //
-        leaf{in<void>, std::move(l1)}, //
+   //     leaf{in<void>, std::move(l0)}, //
+   //     leaf{in<void>, std::move(l1)}, //
         leaf{in<void>, std::move(l2)}};
 
-    total.execute(scheduler, ou::nothing_v, [&](auto&&...) { l.count_down(); });
+    total.execute(scheduler, ou::nothing_v,
+        [&](boost::variant<int>) { l.count_down(); });
+
     l.wait();
+    }
+    std::cout << "waited\n\n";
+
+
 }
 
 void t3()

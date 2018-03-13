@@ -9,6 +9,7 @@
 #include <atomic>
 #include <boost/variant.hpp>
 #include <type_traits>
+#include <iostream>
 
 namespace orizzonte::node
 {
@@ -74,13 +75,17 @@ namespace orizzonte::node
 
                                 if(_state->_left.fetch_sub(1) == 1)
                                 {
+                                    // TODO:
+                                    // What if this is called after l.wait()?
                                     _state.destroy();
+                                    std::cout << "destroyed\n";
                                 }
                             });
                     };
 
-                    detail::schedule_if_last<Fs...>(
-                        i, scheduler, std::move(computation));
+                    scheduler(std::move(computation));
+                   // detail::schedule_if_last<Fs...>(
+                   //     i, scheduler, std::move(computation));
                 },
                 meta::t<Fs>...);
         }
