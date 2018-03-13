@@ -23,11 +23,13 @@ namespace orizzonte::node
         struct shared_state
         {
             ORIZZONTE_CACHE_ALIGNED in_type _input;
-            ORIZZONTE_CACHE_ALIGNED std::atomic<int> _left{sizeof...(Fs)};
+            ORIZZONTE_CACHE_ALIGNED std::atomic<int> _left;
 
             template <typename Input>
             shared_state(Input&& input) : _input{FWD(input)}
             {
+                // `std::atomic` construction is not atomic.
+                _left.store(sizeof...(Fs));
             }
         };
 

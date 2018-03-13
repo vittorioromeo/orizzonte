@@ -25,7 +25,7 @@ template <typename Scheduler, typename Computation,
 void execute_and_block(
     Scheduler& s, Computation&& c, Input&& input = ou::nothing{})
 {
-    orizzonte::utility::scoped_bool_latch l;
+    orizzonte::utility::scoped_bool_latch l{false};
     FWD(c).execute(s, FWD(input), [&l](auto&&...) { l.count_down(); });
 }
 
@@ -51,7 +51,7 @@ void t1()
 
     auto l0 = [] {};
     auto l1 = [] { return 42; };
-    auto l2 = [](int x) { assert(x == 42); };
+    auto l2 = [](int x) { (void)x;assert(x == 42); };
 
     auto s0 = seq{leaf{in<void>, std::move(l0)}, leaf{in<void>, std::move(l1)}};
 
@@ -95,8 +95,38 @@ void t2()
     ENSURE(ctr == 3);
 }
 
+void t6()
+{
+    auto scheduler = S{};
+
+    orizzonte::utility::int_latch l{4};
+
+    auto l0 = [&] {
+        l.count_down();
+        return 0;
+    };
+    auto l1 = [&] {
+        l.count_down();
+        return 1;
+    };
+    auto l2 = [&] {
+        l.count_down();
+        return 2;
+    };
+
+    auto total = any{                  //
+        leaf{in<void>, std::move(l0)}, //
+        leaf{in<void>, std::move(l1)}, //
+        leaf{in<void>, std::move(l2)}};
+
+    total.execute(scheduler, ou::nothing_v, [&](auto&&...) { l.count_down(); });
+    l.wait();
+}
+
 void t3()
 {
+    orizzonte::utility::int_latch l{4};
+
     auto scheduler = S{};
 
     std::atomic<int> ctr = 0;
@@ -105,9 +135,9 @@ void t3()
     auto l1 = [] { return 1; };
     auto l2 = [] { return 2; };
 
-    auto cp0 = [&](int x) { ctr += x; };
-    auto cp1 = [&](int x) { ctr += x; };
-    auto cp2 = [&](int x) { ctr += x; };
+    auto cp0 = [&](int x) { ctr += x; l.count_down(); };
+    auto cp1 = [&](int x) { ctr += x; l.count_down(); };
+    auto cp2 = [&](int x) { ctr += x; l.count_down(); };
 
     auto lf0 = leaf{in<void>, std::move(l0)};
     auto lf1 = leaf{in<void>, std::move(l1)};
@@ -118,8 +148,9 @@ void t3()
         seq{std::move(lf1), leaf{in<int>, std::move(cp1)}},
         seq{std::move(lf2), leaf{in<int>, std::move(cp2)}}};
 
-    execute_and_block(scheduler, total);
+    total.execute(scheduler, ou::nothing_v, [&](auto&&...) { l.count_down(); });
 
+    l.wait();
     ENSURE(ctr == 3);
 }
 
@@ -224,20 +255,24 @@ void t9()
     // this_thread::sleep_for(chrono::milliseconds(1));
 }
 
+template <typename F>
+void do_test(const char* name, F&& f)
+{
+    std::cout << name << '\n';
+    for(volatile int i = 0; i < 50000; ++i) f();
+    std::cout << name << " end\n";
+}
+
 int main()
 {
-    t9();
+#define DO_T(n) do_test("t" #n, [] { t##n(); })
 
-#define DO_T(n)                           \
-                                          \
-    std::cout << "t" #n "\n";             \
-    for(int i = 0; i < 1000; ++i) t##n(); \
-    std::cout << "t" #n "end\n";
-
-    DO_T(1);
-    DO_T(2);
-    DO_T(3);
-    DO_T(4);
-    DO_T(5);
-    DO_T(9);
+    // DO_T(0);
+    // DO_T(1);
+    // DO_T(2);
+    // DO_T(3);
+    DO_T(6);
+    // DO_T(4);
+    // DO_T(5);
+    // DO_T(9);
 }

@@ -25,12 +25,14 @@ namespace orizzonte::node
         struct shared_state
         {
             ORIZZONTE_CACHE_ALIGNED in_type _input;
-            ORIZZONTE_CACHE_ALIGNED std::atomic<int> _left{sizeof...(Fs)};
-            ORIZZONTE_CACHE_ALIGNED std::atomic<bool> _done{false};
+            ORIZZONTE_CACHE_ALIGNED std::atomic<int> _left;
+            ORIZZONTE_CACHE_ALIGNED std::atomic<bool> _done;
 
             template <typename Input>
             shared_state(Input&& input) : _input{FWD(input)}
             {
+                _left.store(sizeof...(Fs));
+                _done.store(false);
             }
         };
 
@@ -50,6 +52,7 @@ namespace orizzonte::node
             // TODO: don't construct/destroy if lvalue?
             _state.construct(FWD(input));
 
+
             // TODO:
             // the behavior below doesn't represent 'when_any', as the
             // computation continues only when all branches have finished
@@ -62,30 +65,16 @@ namespace orizzonte::node
                                            then /* TODO: fwd capture */] {
                         f.execute(scheduler, _state->_input,
                             [this, then](auto&& out) {
-                                /*
-                                if(_state->_left.fetch_sub(1) == sizeof...(Fs))
-                                {
-                                    _values = out; // TODO: fwd?
-                                }
-
-                                if(_state->_left.load() == 0)
-                                {
-                                    _state.destroy();
-                                    then(_values); // TODO: move?
-                                }
-
-                                return;
-*/
                                 if(_state->_done.exchange(true) ==
                                     false) // TODO: use left?
                                 {
                                     _values = out; // TODO: fwd?
+                                    then(_values); // TODO: move?
                                 }
 
                                 if(_state->_left.fetch_sub(1) == 1)
                                 {
                                     _state.destroy();
-                                    then(_values); // TODO: move?
                                 }
                             });
                     };

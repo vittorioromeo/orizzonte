@@ -8,6 +8,7 @@
 #include <cassert>
 #include <type_traits>
 #include <utility>
+#include "./movable_atomic.hpp"
 
 namespace orizzonte::utility
 {
@@ -21,7 +22,8 @@ namespace orizzonte::utility
 
         // TODO: more portable
 #ifndef DNDEBUG
-        bool _engaged{false};
+//#if 0
+        movable_atomic<bool> _engaged{false};
 
         // clang-format off
         void set_engaged() noexcept      { _engaged = true; }
