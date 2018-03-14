@@ -20,18 +20,27 @@ namespace orizzonte::node
         {
         }
 
-        template <typename Scheduler, typename Input, typename Then>
+        template <typename Scheduler, typename Input, typename Then,
+            typename Cleanup>
         void execute(Scheduler& scheduler, Input&& input,
-            Then&& then = utility::noop_v) &
+            Then&& then = utility::noop_v,
+            Cleanup&& cleanup = utility::noop_v) &
         {
             // A `seq` doesn't schedule a computation on a separate
             // thread by default. `A` could however be executed asynchronously -
             // arguments to this function need to be captured inside the closure
             // passed to `A`.
-            static_cast<A&>(*this).execute(
-                scheduler, FWD(input), [this, &scheduler, then](auto&& out) {
-                    static_cast<B&>(*this).execute(scheduler, FWD(out), then);
-                });
+            static_cast<A&>(*this).execute(scheduler, FWD(input),
+                [this, &scheduler, then, cleanup](auto&& out) {
+                    static_cast<B&>(*this).execute(
+                        scheduler, FWD(out), then, cleanup);
+                },
+                cleanup);
+        }
+
+        static constexpr std::size_t count() noexcept
+        {
+            return A::count() + B::count();
         }
     };
 }

@@ -8,8 +8,8 @@
 #include "./helper.hpp"
 #include <atomic>
 #include <boost/variant.hpp>
-#include <type_traits>
 #include <iostream>
+#include <type_traits>
 
 namespace orizzonte::node
 {
@@ -47,8 +47,10 @@ namespace orizzonte::node
         {
         }
 
-        template <typename Scheduler, typename Input, typename Then>
-        void execute(Scheduler& scheduler, Input&& input, Then&& then) &
+        template <typename Scheduler, typename Input, typename Then,
+            typename Cleanup>
+        void execute(Scheduler& scheduler, Input&& input, Then&& then,
+            Cleanup&& cleanup) &
         {
             // TODO: don't construct/destroy if lvalue?
             _state.construct(FWD(input));
@@ -62,10 +64,10 @@ namespace orizzonte::node
             meta::enumerate_args(
                 [&](auto i, auto t) {
                     auto& f = static_cast<meta::unwrap<decltype(t)>&>(*this);
-                    auto computation = [this, &scheduler, &f,
-                                           then /* TODO: fwd capture */] {
+                    auto computation = [this, &scheduler, &f, then,
+                                           cleanup /* TODO: fwd capture */] {
                         f.execute(scheduler, _state->_input,
-                            [this, then](auto&& out) {
+                            [this, then, cleanup](auto&& out) {
                                 if(_state->_done.exchange(true) ==
                                     false) // TODO: use left?
                                 {
@@ -78,35 +80,25 @@ namespace orizzonte::node
                                     // TODO:
                                     // What if this is called after l.wait()?
                                     _state.destroy();
-                                    std::cout << "destroyed\n";
+                                    cleanup();
+                                    // std::cout << "destroyed\n";
                                 }
-                            });
+                            },
+                            cleanup);
                     };
 
-                    scheduler(std::move(computation));
-                   // detail::schedule_if_last<Fs...>(
-                   //     i, scheduler, std::move(computation));
+                    // scheduler(std::move(computation));
+
+                    detail::schedule_if_last<Fs...>(
+                        i, scheduler, std::move(computation));
                 },
                 meta::t<Fs>...);
         }
 
-        /*template <typename Scheduler, typename Input>
-        void execute(Scheduler& scheduler, Input&& input)
+        static constexpr std::size_t count() noexcept
         {
-            auto doit = [&](auto& f)
-            {
-                scheduler([&]
-                {
-                    f.execute(scheduler, input, [&](auto&& out)
-                    {
-                        // std::get<l0>(_values) = out;
-                    });
-                });
-            };
-
-            (doit(static_cast<Fs&>(*this)), ...);
-            _left = 0;
-        }*/
+            return (Fs::count() + ...) + 1;
+        }
     };
 }
 

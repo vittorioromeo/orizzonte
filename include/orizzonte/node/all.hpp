@@ -43,8 +43,10 @@ namespace orizzonte::node
         {
         }
 
-        template <typename Scheduler, typename Input, typename Then>
-        void execute(Scheduler& scheduler, Input&& input, Then&& then) &
+        template <typename Scheduler, typename Input, typename Then,
+            typename Cleanup>
+        void execute(Scheduler& scheduler, Input&& input, Then&& then,
+            Cleanup&& cleanup) &
         {
             // TODO: don't construct/destroy if lvalue?
             _state.construct(FWD(input));
@@ -52,18 +54,20 @@ namespace orizzonte::node
             meta::enumerate_args(
                 [&](auto i, auto t) {
                     auto& f = static_cast<meta::unwrap<decltype(t)>&>(*this);
-                    auto computation = [this, &scheduler, &f, then,
+                    auto computation = [this, &scheduler, &f, then, cleanup,
                                            i /* TODO: fwd capture */] {
                         f.execute(scheduler, _state->_input,
-                            [this, then, i](auto&& out) {
+                            [this, then, cleanup, i](auto&& out) {
                                 utility::get<i>(_values) = out;
 
                                 if(_state->_left.fetch_sub(1) == 1)
                                 {
                                     _state.destroy();
                                     then(_values); // TODO: move?
+                                    cleanup();
                                 }
-                            });
+                            },
+                            cleanup);
                     };
 
                     detail::schedule_if_last<Fs...>(
@@ -72,22 +76,9 @@ namespace orizzonte::node
                 meta::t<Fs>...);
         }
 
-        /*template <typename Scheduler, typename Input>
-        void execute(Scheduler& scheduler, Input&& input)
+        static constexpr std::size_t count() noexcept
         {
-            auto doit = [&](auto& f)
-            {
-                scheduler([&]
-                {
-                    f.execute(scheduler, input, [&](auto&& out)
-                    {
-                        // std::get<0>(_values) = out;
-                    });
-                });
-            };
-
-            (doit(static_cast<Fs&>(*this)), ...);
-            _left = 0;
-        }*/
+            return (Fs::count() + ...) + 1;
+        }
     };
 }

@@ -21,12 +21,23 @@ namespace orizzonte::node
         {
         }
 
-        template <typename Scheduler, typename Input, typename Then>
-        void execute(Scheduler&, Input&& input, Then&& then = utility::noop_v) &
+        template <typename Scheduler, typename Input, typename Then,
+            typename Cleanup>
+        void execute(Scheduler&, Input&& input, Then&& then = utility::noop_v,
+            Cleanup&& cleanup = utility::noop_v) &
         {
-            // A `leaf` doesn't schedule a computation on a separate thread by
-            // default. The parent of the `leaf` takes care of this if desired.
+            (void)cleanup;
+
+            // A `leaf` doesn't schedule a computation on a separate thread
+            // by default. The parent of the `leaf` takes care of this if
+            // desired.
             FWD(then)(utility::call_ignoring_nothing(*this, FWD(input)));
+            // FWD(cleanup)();
+        }
+
+        static constexpr std::size_t count() noexcept
+        {
+            return 0;
         }
     };
 }

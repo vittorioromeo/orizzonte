@@ -121,6 +121,14 @@ std::cout << "t6 start\n";
    //     leaf{in<void>, std::move(l1)}, //
         leaf{in<void>, std::move(l2)}};
 
+
+    // constexpr auto count = total.visit([](auto&&){
+    // constexpr auto count = total.count(...);
+    //
+    // total.execute(scheduler, ou::nothing_v,
+    //     [&](boost::variant<int>) { l.count_down(); },
+    //     [&]{ /* finalizer */ });
+
     total.execute(scheduler, ou::nothing_v,
         [&](boost::variant<int>) { l.count_down(); });
 
