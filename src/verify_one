@@ -1,7 +1,7 @@
 #!/bin/bash
 FLAGS='-std=c++2a -g -W -Wall -Wextra -Wpedantic -I/home/vittorioromeo/OHWorkspace/orizzonte/include -lpthread'
 
-echo "$1 $2"
-$1 $FLAGS -O0 -fsanitize=$2 -o "/tmp/$3.x" $4 && "/tmp/$3.x"
-$1 $FLAGS -DNDEBUG -Ofast -fsanitize=$2 -o "/tmp/$3.x" $4 && "/tmp/$3.x"
+echo "$1 $2" && \
+$1 $FLAGS -O0 -fsanitize=$2 -o "/tmp/$3.x" $4 && "/tmp/$3.x" && \
+$1 $FLAGS -DNDEBUG -Ofast -fsanitize=$2 -o "/tmp/$3.x" $4 && "/tmp/$3.x" && \
 echo "$1 $2 done"

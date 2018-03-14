@@ -54,11 +54,11 @@ namespace orizzonte::node
             meta::enumerate_args(
                 [&](auto i, auto t) {
                     auto& f = static_cast<meta::unwrap<decltype(t)>&>(*this);
-                    auto computation = [this, &scheduler, &f, then, cleanup,
-                                           i /* TODO: fwd capture */] {
+                    auto computation = [this, &scheduler, &f, then,
+                                           cleanup /* TODO: fwd capture */] {
                         f.execute(scheduler, _state->_input,
-                            [this, then, cleanup, i](auto&& out) {
-                                utility::get<i>(_values) = out;
+                            [this, then, cleanup](auto&& out) {
+                                utility::get<decltype(i){}>(_values) = out;
 
                                 if(_state->_left.fetch_sub(1) == 1)
                                 {
