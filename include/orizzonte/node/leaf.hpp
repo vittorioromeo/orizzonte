@@ -7,6 +7,8 @@
 #include "../utility/noop.hpp"
 #include "../utility/nothing.hpp"
 #include "./helper.hpp"
+#include <boost/callable_traits.hpp>
+#include <type_traits>
 
 namespace orizzonte::node
 {
@@ -16,6 +18,10 @@ namespace orizzonte::node
     public:
         using in_type = In;
         using out_type = utility::result_of_ignoring_nothing_t<F&, in_type>;
+
+        constexpr leaf(F&& f) : F{std::move(f)}
+        {
+        }
 
         constexpr leaf(detail::in_t<In>, F&& f) : F{std::move(f)}
         {
@@ -40,4 +46,10 @@ namespace orizzonte::node
             return 0;
         }
     };
+
+    template <typename R, typename Arg>
+    leaf(R (*)(Arg))->leaf<Arg, R (*)(Arg)>;
+
+    template <typename F, typename S = decltype(&std::decay_t<F>::operator())>
+    leaf(F &&)->leaf<detail::second_arg_t<S>, std::decay_t<F>>;
 }

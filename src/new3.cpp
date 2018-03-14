@@ -20,7 +20,6 @@ struct S
     }
 };
 
-
 #define ENSURE(...)       \
     if(!(__VA_ARGS__))    \
     {                     \
@@ -47,30 +46,30 @@ void sync_execute(Scheduler&& scheduler, Graph&& graph, Then&& then)
 
 void t0()
 {
-    auto graph = leaf{in<void>, [] { return 42; }};
+    auto graph = leaf{[] { return 42; }};
     sync_execute(S{}, graph, [](int r) { ENSURE(r == 42); });
 }
 
 void t1()
 {
     auto graph = seq{
-        leaf{in<void>, [] { return 21; }},          //
-        leaf{in<int>, [](int x) { return x + 21; }} //
+        leaf{[] { return 21; }},           //
+        leaf{[](int x) { return x + 21; }} //
     };
     sync_execute(S{}, graph, [](int r) { ENSURE(r == 42); });
 }
 
 void t2()
 {
-    auto graph = all{leaf{in<void>, [] { return 42; }}};
+    auto graph = all{leaf{[] { return 42; }}};
     sync_execute(S{}, graph, [](auto r) { ENSURE(get<0>(r) == 42); });
 }
 
 void t3()
 {
     auto graph = all{
-        leaf{in<void>, [] { return 0; }}, //
-        leaf{in<void>, [] { return 1; }}  //
+        leaf{[] { return 0; }}, //
+        leaf{[] { return 1; }}  //
     };
     sync_execute(S{}, graph, [](auto r) {
         ENSURE(get<0>(r) == 0);
@@ -80,15 +79,15 @@ void t3()
 
 void t4()
 {
-    auto graph = any{leaf{in<void>, [] { return 42; }}};
+    auto graph = any{leaf{[] { return 42; }}};
     sync_execute(S{}, graph, [](auto r) { ENSURE(get<int>(r) == 42); });
 }
 
 void t5()
 {
     auto graph = any{
-        leaf{in<void>, [] { return 0; }}, //
-        leaf{in<void>, [] { return 1; }}  //
+        leaf{[] { return 0; }}, //
+        leaf{[] { return 1; }}  //
     };
     sync_execute(S{}, graph, [](auto r) {
         ENSURE(apply_visitor([](int y) { return y == 0 || y == 1; }, r));
@@ -99,14 +98,14 @@ void t6()
 {
     auto graph = all{//
         any{
-            leaf{in<void>, [] { return 0; }}, //
-            leaf{in<void>, [] { return 1; }}, //
-            leaf{in<void>, [] { return 2; }}  //
+            leaf{[] { return 0; }}, //
+            leaf{[] { return 1; }}, //
+            leaf{[] { return 2; }}  //
         },
         any{
-            leaf{in<void>, [] { return 3; }}, //
-            leaf{in<void>, [] { return 4; }}, //
-            leaf{in<void>, [] { return 5; }}  //
+            leaf{[] { return 3; }}, //
+            leaf{[] { return 4; }}, //
+            leaf{[] { return 5; }}  //
         }};
 
     sync_execute(S{}, graph, [](auto r) {
@@ -121,14 +120,14 @@ void t7()
 {
     auto graph = any{//
         all{
-            leaf{in<void>, [] { return 0; }}, //
-            leaf{in<void>, [] { return 1; }}, //
-            leaf{in<void>, [] { return 2; }}  //
+            leaf{[] { return 0; }}, //
+            leaf{[] { return 1; }}, //
+            leaf{[] { return 2; }}  //
         },
         all{
-            leaf{in<void>, [] { return 3; }}, //
-            leaf{in<void>, [] { return 4; }}, //
-            leaf{in<void>, [] { return 5; }}  //
+            leaf{[] { return 3; }}, //
+            leaf{[] { return 4; }}, //
+            leaf{[] { return 5; }}  //
         }};
 
     sync_execute(S{}, graph, [](auto r) {
@@ -148,14 +147,14 @@ void t8()
 {
     auto graph = any{//
         all{
-            any{leaf{in<void>, [] { return 0; }},  //
-                leaf{in<void>, [] { return 1; }}}, //
-            leaf{in<void>, [] { return 2; }}       //
+            any{leaf{[] { return 0; }},  //
+                leaf{[] { return 1; }}}, //
+            leaf{[] { return 2; }}       //
         },
         all{
-            any{leaf{in<void>, [] { return 0; }},  //
-                leaf{in<void>, [] { return 1; }}}, //
-            leaf{in<void>, [] { return 2; }}       //
+            any{leaf{[] { return 0; }},  //
+                leaf{[] { return 1; }}}, //
+            leaf{[] { return 2; }}       //
         }};
 
     sync_execute(S{}, graph, [](auto r) {
@@ -185,10 +184,10 @@ void t61()
     auto l2 = [&] { return 2; };
 
     {
-        auto total = any{                  //
-            leaf{in<void>, std::move(l0)}, //
-            leaf{in<void>, std::move(l1)}, //
-            leaf{in<void>, std::move(l2)}};
+        auto total = any{        //
+            leaf{std::move(l0)}, //
+            leaf{std::move(l1)}, //
+            leaf{std::move(l2)}};
 
         constexpr auto count = total.count();
         assert(count == 1);

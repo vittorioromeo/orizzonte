@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <utility>
 #include "../utility/nothing.hpp"
+#include <utility>
 
 namespace orizzonte::node::detail
 {
@@ -35,6 +35,37 @@ namespace orizzonte::node::detail
         constexpr bool is_last = Index{} == sizeof...(Xs) - 1;
         schedule_if<is_last>(scheduler, FWD(f));
     }
+
+    template <typename Sig>
+    struct second_arg;
+
+
+    template <typename R, typename C>
+    struct second_arg<R (C::*)()>
+    {
+        using type = utility::nothing;
+    };
+
+    template <typename R, typename C>
+    struct second_arg<R (C::*)() const>
+    {
+        using type = utility::nothing;
+    };
+
+    template <typename R, typename C, typename A>
+    struct second_arg<R (C::*)(A)>
+    {
+        using type = A;
+    };
+
+    template <typename R, typename C, typename A>
+    struct second_arg<R (C::*)(A) const>
+    {
+        using type = A;
+    };
+
+    template <typename Sig>
+    using second_arg_t = typename second_arg<Sig>::type;
 }
 
 namespace orizzonte::node
