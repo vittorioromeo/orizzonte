@@ -30,6 +30,11 @@ namespace orizzonte::node
             // thread by default. `A` could however be executed asynchronously -
             // arguments to this function need to be captured inside the closure
             // passed to `A`.
+
+            // `cleanup` needs to be passed to both the outer and inner nodes,
+            // as they might both contain a node that has non-deterministic
+            // execution.
+
             static_cast<A&>(*this).execute(scheduler, FWD(input),
                 [this, &scheduler, then, cleanup](auto&& out) {
                     static_cast<B&>(*this).execute(
@@ -38,9 +43,9 @@ namespace orizzonte::node
                 cleanup);
         }
 
-        static constexpr std::size_t count() noexcept
+        static constexpr std::size_t cleanup_count() noexcept
         {
-            return A::count() + B::count();
+            return A::cleanup_count() + B::cleanup_count();
         }
     };
 }

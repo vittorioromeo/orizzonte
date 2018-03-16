@@ -31,13 +31,13 @@ using namespace orizzonte::node;
 template <typename Scheduler, typename Graph, typename Then>
 void sync_execute(Scheduler&& scheduler, Graph&& graph, Then&& then)
 {
-    constexpr int count = std::decay_t<Graph>::count() + 1;
+    constexpr int count = std::decay_t<Graph>::cleanup_count() + 1;
     orizzonte::utility::int_latch l{count};
 
     graph.execute(scheduler, ou::nothing_v,
         [&](auto&& res) {
-            l.count_down();
             then(FWD(res));
+            l.count_down();
         },
         [&] { l.count_down(); });
 
@@ -189,7 +189,7 @@ void t61()
             leaf{std::move(l1)}, //
             leaf{std::move(l2)}};
 
-        constexpr auto count = total.count();
+        constexpr auto count = total.cleanup_count();
         assert(count == 1);
         // std::cout << count << '\n';
         orizzonte::utility::int_latch l{count + 1};

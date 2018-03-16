@@ -55,12 +55,6 @@ namespace orizzonte::node
             // TODO: don't construct/destroy if lvalue?
             _state.construct(FWD(input));
 
-
-            // TODO:
-            // the behavior below doesn't represent 'when_any', as the
-            // computation continues only when all branches have finished
-            // execution - it is therefore pointless
-
             meta::enumerate_args(
                 [&](auto i, auto t) {
                     auto& f = static_cast<meta::unwrap<decltype(t)>&>(*this);
@@ -68,8 +62,8 @@ namespace orizzonte::node
                                            cleanup /* TODO: fwd capture */] {
                         f.execute(scheduler, _state->_input,
                             [this, then, cleanup](auto&& out) {
-                                if(_state->_done.exchange(true) ==
-                                    false) // TODO: use left?
+                                // TODO: use left?
+                                if(_state->_done.exchange(true) == false)
                                 {
                                     _values = out; // TODO: fwd?
                                     then(_values); // TODO: move?
@@ -77,17 +71,12 @@ namespace orizzonte::node
 
                                 if(_state->_left.fetch_sub(1) == 1)
                                 {
-                                    // TODO:
-                                    // What if this is called after l.wait()?
                                     _state.destroy();
                                     cleanup();
-                                    // std::cout << "destroyed\n";
                                 }
                             },
                             cleanup);
                     };
-
-                    // scheduler(std::move(computation));
 
                     detail::schedule_if_last<Fs...>(
                         i, scheduler, std::move(computation));
@@ -95,9 +84,9 @@ namespace orizzonte::node
                 meta::t<Fs>...);
         }
 
-        static constexpr std::size_t count() noexcept
+        static constexpr std::size_t cleanup_count() noexcept
         {
-            return (Fs::count() + ...) + 1;
+            return (Fs::cleanup_count() + ...) + 1;
         }
     };
 }

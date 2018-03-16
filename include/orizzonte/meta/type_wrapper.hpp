@@ -16,6 +16,10 @@ namespace orizzonte::meta
         using type = T;
     };
 
+    /// @copydoc type_wrapper
+    template <typename T>
+    using type = type_wrapper<T>;
+
     /// @brief `constexpr` variable template for `type_wrapper`.
     template <typename T>
     inline constexpr type_wrapper<T> t{};

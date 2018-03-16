@@ -22,8 +22,7 @@ namespace orizzonte::utility
 
         // TODO: more portable
 #ifndef DNDEBUG
-//#if 0
-        movable_atomic<bool> _engaged{false};
+        bool _engaged{false};
 
         // clang-format off
         void set_engaged() noexcept      { _engaged = true; }

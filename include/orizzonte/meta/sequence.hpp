@@ -6,6 +6,7 @@
 
 #include <type_traits>
 #include <utility>
+#include "./type_wrapper.hpp"
 
 namespace orizzonte::meta
 {
@@ -17,9 +18,8 @@ namespace orizzonte::meta
         };
 
         template <>
-        struct seq_type<>
+        struct seq_type<> : type<int>
         {
-            using type = int;
         };
     }
 

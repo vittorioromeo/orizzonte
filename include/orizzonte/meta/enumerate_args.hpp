@@ -27,6 +27,7 @@ namespace orizzonte::meta
     template <typename F, typename... Ts>
     void enumerate_args(F&& f, Ts&&... xs)
     {
+        // C++2a: use a lambda here.
         detail::enumerate_args_impl(sequence_for_v<Ts...>, FWD(f), FWD(xs)...);
     }
 }

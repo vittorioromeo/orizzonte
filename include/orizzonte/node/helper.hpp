@@ -4,7 +4,9 @@
 
 #pragma once
 
+#include "../meta/type_wrapper.hpp"
 #include "../utility/nothing.hpp"
+#include <boost/callable_traits.hpp>
 #include <utility>
 
 namespace orizzonte::node::detail
@@ -36,36 +38,22 @@ namespace orizzonte::node::detail
         schedule_if<is_last>(scheduler, FWD(f));
     }
 
-    template <typename Sig>
-    struct second_arg;
+    template <typename Tuple>
+    struct first_arg_impl;
 
-
-    template <typename R, typename C>
-    struct second_arg<R (C::*)()>
+    template <typename C>
+    struct first_arg_impl<std::tuple<C>> : meta::type<utility::nothing>
     {
-        using type = utility::nothing;
     };
 
-    template <typename R, typename C>
-    struct second_arg<R (C::*)() const>
+    template <typename C, typename T>
+    struct first_arg_impl<std::tuple<C, T>> : meta::type<T>
     {
-        using type = utility::nothing;
     };
 
-    template <typename R, typename C, typename A>
-    struct second_arg<R (C::*)(A)>
-    {
-        using type = A;
-    };
-
-    template <typename R, typename C, typename A>
-    struct second_arg<R (C::*)(A) const>
-    {
-        using type = A;
-    };
-
-    template <typename Sig>
-    using second_arg_t = typename second_arg<Sig>::type;
+    template <typename F>
+    using first_arg_t =
+        typename first_arg_impl<boost::callable_traits::args_t<F>>::type;
 }
 
 namespace orizzonte::node

@@ -57,14 +57,18 @@ namespace orizzonte::node
                     auto computation = [this, &scheduler, &f, then,
                                            cleanup /* TODO: fwd capture */] {
                         f.execute(scheduler, _state->_input,
-                            [this, then, cleanup](auto&& out) {
+                            [this, then](auto&& out) {
                                 utility::get<decltype(i){}>(_values) = out;
 
                                 if(_state->_left.fetch_sub(1) == 1)
                                 {
                                     _state.destroy();
                                     then(_values); // TODO: move?
-                                    cleanup();
+
+                                    // Invoking `cleanup` is not required here
+                                    // as there is only one deterministic clear
+                                    // path that can be taken. The `then` itself
+                                    // can take care of the cleanup step.
                                 }
                             },
                             cleanup);
@@ -76,9 +80,9 @@ namespace orizzonte::node
                 meta::t<Fs>...);
         }
 
-        static constexpr std::size_t count() noexcept
+        static constexpr std::size_t cleanup_count() noexcept
         {
-            return (Fs::count() + ...) + 1;
+            return (Fs::cleanup_count() + ...);
         }
     };
 }

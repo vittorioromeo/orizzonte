@@ -242,3 +242,39 @@ int main()
     std::cout.flush();
     return 0;
 }
+
+
+
+struct obj
+{
+    int operator()() &  { return 0; }
+    int operator()() && { return 1; }
+};
+
+function_ref<int(float)>
+function_ref<int(float) const>
+function_ref<int(float) noexcept>
+function_ref<int(float) const noexcept>
+function_ref<int, float>
+const_function_ref<int, float>
+noexcept_function_ref<int, float>
+const_noexcept_function_ref<int, float>
+
+void foo(function_ref<int()> f)
+{
+    f();
+}
+
+/*
+template <typename F>
+void foo(F f)
+{
+    f();
+    FWD(f)();
+}
+*/
+
+int main()
+{
+    foo(obj{});
+}
