@@ -1,5 +1,6 @@
 .clang-format
 buildgcc
+callgrind.*
 .clang_complete
 .vscode
 

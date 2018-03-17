@@ -1,5 +1,6 @@
 #include "../include/orizzonte.hpp"
 #include <atomic>
+#include <boost/thread/thread_pool.hpp>
 #include <boost/variant.hpp>
 #include <chrono>
 #include <experimental/type_traits>
@@ -10,13 +11,16 @@
 
 namespace ou = orizzonte::utility;
 
+boost::executors::basic_thread_pool pool;
+
 // TODO: define executor interface/concept
 struct S
 {
     template <typename F>
     void operator()(F&& f)
     {
-        std::thread{std::move(f)}.detach();
+        pool.submit(std::move(f));
+        // std::thread{std::move(f)}.detach();
     }
 };
 
