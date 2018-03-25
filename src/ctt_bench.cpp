@@ -17,7 +17,7 @@ using hr_clock = std::chrono::high_resolution_clock;
 template <typename TF>
 void bench(const std::string& title, int times, TF&& f)
 {
-    std::vector<float> mss;
+    double acc = 0;
 
     for(int i(0); i < times; ++i)
     {
@@ -31,17 +31,10 @@ void bench(const std::string& title, int times, TF&& f)
         auto cnt =
             std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
 
-        mss.emplace_back(cnt);
+        acc += cnt;
     }
 
-    float mean = 0.f;
-    for(auto x : mss)
-    {
-        mean += x;
-    }
-    mean /= mss.size();
-
-    std::cout << title << " | " << mean << " ms\n";
+    std::cout << title << " | " << (acc / (double)times) << " ms\n";
 }
 
 int main()

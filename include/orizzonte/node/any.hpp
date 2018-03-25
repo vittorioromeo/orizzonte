@@ -27,13 +27,11 @@ namespace orizzonte::node
         {
             ORIZZONTE_CACHE_ALIGNED in_type _input;
             ORIZZONTE_CACHE_ALIGNED std::atomic<int> _left;
-            ORIZZONTE_CACHE_ALIGNED std::atomic<bool> _done;
 
             template <typename Input>
             shared_state(Input&& input) : _input{FWD(input)}
             {
                 _left.store(sizeof...(Fs));
-                _done.store(false);
             }
         };
 
@@ -62,14 +60,14 @@ namespace orizzonte::node
                                            cleanup /* TODO: fwd capture */] {
                         f.execute(scheduler, _state->_input,
                             [this, then, cleanup](auto&& out) {
-                                // TODO: use left?
-                                if(_state->_done.exchange(true) == false)
+                                const auto r = _state->_left.fetch_sub(1);
+                                if(r == sizeof...(Fs))
                                 {
                                     _values = out; // TODO: fwd?
                                     then(_values); // TODO: move?
                                 }
 
-                                if(_state->_left.fetch_sub(1) == 1)
+                                if(r == 1)
                                 {
                                     _state.destroy();
                                     cleanup();

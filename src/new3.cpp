@@ -31,22 +31,7 @@ struct S
     }
 
 using namespace orizzonte::node;
-
-template <typename Scheduler, typename Graph, typename Then>
-void sync_execute(Scheduler&& scheduler, Graph&& graph, Then&& then)
-{
-    constexpr int count = std::decay_t<Graph>::cleanup_count() + 1;
-    orizzonte::utility::int_latch l{count};
-
-    graph.execute(scheduler, ou::nothing_v,
-        [&](auto&& res) {
-            then(FWD(res));
-            l.count_down();
-        },
-        [&] { l.count_down(); });
-
-    l.wait();
-}
+using orizzonte::utility::sync_execute;
 
 void t0()
 {
@@ -175,6 +160,25 @@ void t8()
     });
 }
 
+void t9()
+{
+    auto graph = any{//
+        seq{
+            any{leaf{[] { return 0; }},                      //
+                leaf{[] { return 1; }}},                     //
+            leaf{[](boost::variant<int, int>) { return 2; }} //
+        },
+        seq{
+            any{leaf{[] { return 0; }},                      //
+                leaf{[] { return 1; }}},                     //
+            leaf{[](boost::variant<int, int>) { return 2; }} //
+        }};
+
+    sync_execute(S{}, graph, [](auto r) {
+        ENSURE(apply_visitor([](auto y) { return y == 2; }, r));
+    });
+}
+
 
 
 void t61()
@@ -220,8 +224,40 @@ void do_test(const char* name, F&& f)
     std::cout << name << " end\n";
 }
 
+#include <string>
+#include <iostream>
+
 int main()
 {
+    auto graph = seq{
+        any{leaf{[]{ return "hello"; }},
+            leaf{[]{ return "goodbye"; }}},
+        leaf{[](boost::variant<const char*, const char*> x) {
+            return apply_visitor([](std::string y){ return y + " world"; }, x);
+        }}
+    };
+
+    sync_execute(S{}, graph, [](auto r) {
+        std::cout << r << '\n';
+    });
+/*
+    auto graph = any{//
+        seq{
+            any{leaf{[] { return download("data.com/0"); }}, //
+                leaf{[] { return download("data.com/0"); }}},                     //
+            leaf{[](boost::variant<int, int>) { return 2; }} //
+        },
+        seq{
+            any{leaf{[] { return 0; }},                      //
+                leaf{[] { return 1; }}},                     //
+            leaf{[](boost::variant<int, int>) { return 2; }} //
+        }};
+
+    sync_execute(S{}, graph, [](auto r) {
+        ENSURE(apply_visitor([](auto y) { return y == 2; }, r));
+    });*/
+
+
 #define DO_T(n) do_test("t" #n, [] { t##n(); })
 
     DO_T(0);
@@ -233,6 +269,7 @@ int main()
     DO_T(6);
     DO_T(7);
     DO_T(8);
+    DO_T(9);
 
     DO_T(61);
     // DO_T(4);

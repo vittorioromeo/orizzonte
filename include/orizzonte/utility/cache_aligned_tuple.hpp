@@ -5,21 +5,26 @@
 
 #pragma once
 
+#include "./fwd.hpp"
 #include <cstddef>
 #include <tuple>
-#include "./fwd.hpp"
 
 namespace orizzonte::utility
 {
     // TODO: use `std::hardware_destructive_inference_size` instead of `64`
     inline constexpr std::size_t cache_line_size = 64;
+}
 
+#define ORIZZONTE_CACHE_ALIGNED alignas(::orizzonte::utility::cache_line_size)
+
+namespace orizzonte::utility
+{
     namespace detail
     {
         template <typename T>
         struct cache_aligned
         {
-            alignas(cache_line_size) T _x;
+            ORIZZONTE_CACHE_ALIGNED T _x;
 
             template <typename... Args>
             constexpr cache_aligned(Args&&... args) : _x{FWD(args)...}
@@ -102,5 +107,3 @@ namespace orizzonte::utility
         return FWD(tuple).template get<I>();
     }
 } // namespace orizzonte::utility
-
-#define ORIZZONTE_CACHE_ALIGNED alignas(::orizzonte::utility::cache_line_size)
