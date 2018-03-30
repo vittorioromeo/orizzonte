@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "../meta/enumerate_args.hpp"
+#include "../types/variant.hpp"
 #include "../utility/aligned_storage.hpp"
 #include "./helper.hpp"
 #include <atomic>
@@ -18,9 +20,7 @@ namespace orizzonte::node
     {
     public:
         using in_type = std::common_type_t<typename Fs::in_type...>;
-
-        // TODO: if they're all the same type, no need for variant
-        using out_type = boost::variant<typename Fs::out_type...>;
+        using out_type = orizzonte::variant<typename Fs::out_type...>;
 
     private:
         struct shared_state
@@ -53,33 +53,31 @@ namespace orizzonte::node
             // TODO: don't construct/destroy if lvalue?
             _state.construct(FWD(input));
 
-            meta::enumerate_args(
-                [&](auto i, auto t) {
-                    auto& f = static_cast<meta::unwrap<decltype(t)>&>(*this);
-                    auto computation = [this, &scheduler, &f, then,
-                                           cleanup /* TODO: fwd capture */] {
-                        f.execute(scheduler, _state->_input,
-                            [this, then, cleanup](auto&& out) {
-                                const auto r = _state->_left.fetch_sub(1);
-                                if(r == sizeof...(Fs))
-                                {
-                                    _values = out; // TODO: fwd?
-                                    then(_values); // TODO: move?
-                                }
+            meta::enumerate_types<Fs...>([&](auto i, auto t) {
+                auto& f = static_cast<meta::unwrap<decltype(t)>&>(*this);
+                auto computation = [this, &scheduler, &f, then,
+                                       cleanup /* TODO: fwd capture */] {
+                    f.execute(scheduler, _state->_input,
+                        [this, then, cleanup](auto&& out) {
+                            const auto r = _state->_left.fetch_sub(1);
+                            if(r == sizeof...(Fs))
+                            {
+                                _values = FWD(out);
+                                then(std::move(_values));
+                            }
 
-                                if(r == 1)
-                                {
-                                    _state.destroy();
-                                    cleanup();
-                                }
-                            },
-                            cleanup);
-                    };
+                            if(r == 1)
+                            {
+                                _state.destroy();
+                                cleanup();
+                            }
+                        },
+                        cleanup);
+                };
 
-                    detail::schedule_if_last<Fs...>(
-                        i, scheduler, std::move(computation));
-                },
-                meta::t<Fs>...);
+                detail::schedule_if_last<Fs...>(
+                    i, scheduler, std::move(computation));
+            });
         }
 
         static constexpr std::size_t cleanup_count() noexcept
@@ -89,20 +87,3 @@ namespace orizzonte::node
     };
 }
 
-// TODO:
-template <int N, typename... Ts>
-using NthTypeOf = typename std::tuple_element<N, std::tuple<Ts...>>::type;
-
-template <int N, typename... Ts>
-auto& get(boost::variant<Ts...>& v)
-{
-    using target = NthTypeOf<N, Ts...>;
-    return boost::get<target>(v);
-}
-
-template <int N, typename... Ts>
-auto& get(const boost::variant<Ts...>& v)
-{
-    using target = NthTypeOf<N, Ts...>;
-    return boost::get<target>(v);
-}

@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "../meta/enumerate_args.hpp"
 #include "../utility/aligned_storage.hpp"
 #include "../utility/cache_aligned_tuple.hpp"
 #include "./helper.hpp"
@@ -51,33 +52,31 @@ namespace orizzonte::node
             // TODO: don't construct/destroy if lvalue?
             _state.construct(FWD(input));
 
-            meta::enumerate_args(
-                [&](auto i, auto t) {
-                    auto& f = static_cast<meta::unwrap<decltype(t)>&>(*this);
-                    auto computation = [this, &scheduler, &f, then,
-                                           cleanup /* TODO: fwd capture */] {
-                        f.execute(scheduler, _state->_input,
-                            [this, then](auto&& out) {
-                                utility::get<decltype(i){}>(_values) = out;
+            meta::enumerate_types<Fs...>([&](auto i, auto t) {
+                auto& f = static_cast<meta::unwrap<decltype(t)>&>(*this);
+                auto computation = [this, &scheduler, &f, then,
+                                       cleanup /* TODO: fwd capture */] {
+                    f.execute(scheduler, _state->_input,
+                        [this, then](auto&& out) {
+                            utility::get<decltype(i){}>(_values) = FWD(out);
 
-                                if(_state->_left.fetch_sub(1) == 1)
-                                {
-                                    _state.destroy();
-                                    then(_values); // TODO: move?
+                            if(_state->_left.fetch_sub(1) == 1)
+                            {
+                                _state.destroy();
+                                then(std::move(_values));
 
-                                    // Invoking `cleanup` is not required here
-                                    // as there is only one deterministic clear
-                                    // path that can be taken. The `then` itself
-                                    // can take care of the cleanup step.
-                                }
-                            },
-                            cleanup);
-                    };
+                                // Invoking `cleanup` is not required here
+                                // as there is only one deterministic clear
+                                // path that can be taken. The `then` itself
+                                // can take care of the cleanup step.
+                            }
+                        },
+                        cleanup);
+                };
 
-                    detail::schedule_if_last<Fs...>(
-                        i, scheduler, std::move(computation));
-                },
-                meta::t<Fs>...);
+                detail::schedule_if_last<Fs...>(
+                    i, scheduler, std::move(computation));
+            });
         }
 
         static constexpr std::size_t cleanup_count() noexcept

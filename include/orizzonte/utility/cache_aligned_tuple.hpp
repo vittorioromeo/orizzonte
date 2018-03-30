@@ -58,41 +58,31 @@ namespace orizzonte::utility
 
         using base_type::swap;
 
-        template <typename T>
-        T& get() &
-        {
-            return std::get<detail::cache_aligned<T>>(*this)._x;
-        }
+#define DEFINE_TYPE_GET(qualifier)                         \
+    template <typename T>                                  \
+    T qualifier get() qualifier                            \
+    {                                                      \
+        return static_cast<T qualifier>(                   \
+            std::get<detail::cache_aligned<T>>(*this)._x); \
+    }
 
-        template <typename T>
-        const T& get() const&
-        {
-            return std::get<detail::cache_aligned<T>>(*this)._x;
-        }
+        DEFINE_TYPE_GET(&)
+        DEFINE_TYPE_GET(const&)
+        DEFINE_TYPE_GET(&&)
+#undef DEFINE_TYPE_GET
 
-        template <typename T>
-        T&& get() &&
-        {
-            return std::move(std::get<detail::cache_aligned<T>>(*this)._x);
-        }
+#define DEFINE_IDX_GET(qualifier)                               \
+    template <std::size_t I>                                    \
+    auto qualifier get() qualifier                              \
+    {                                                           \
+        using T = decltype(std::get<I>(*this)._x);              \
+        return static_cast<T qualifier>(std::get<I>(*this)._x); \
+    }
 
-        template <std::size_t I>
-        auto& get() &
-        {
-            return std::get<I>(*this)._x;
-        }
-
-        template <std::size_t I>
-        const auto& get() const&
-        {
-            return std::get<I>(*this)._x;
-        }
-
-        template <std::size_t I>
-        auto&& get() &&
-        {
-            return std::move(std::get<I>(*this)._x);
-        }
+        DEFINE_IDX_GET(&)
+        DEFINE_IDX_GET(const&)
+        DEFINE_IDX_GET(&&)
+#undef DEFINE_IDX_GET
     };
 
     template <typename T, typename Tuple>

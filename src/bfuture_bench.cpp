@@ -262,7 +262,7 @@ void b3_whenany(int d)
                                  sleepus(d);
                                  return 2;
                              }}},
-                         leaf{[&](boost::variant<int, int, int> r) {
+                         leaf{[&](orizzonte::variant<int, int, int> r) {
                              return 42 + boost::apply_visitor(
                                              [](int x) { return x; }, r);
                          }}},

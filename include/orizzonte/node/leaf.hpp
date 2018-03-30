@@ -35,7 +35,8 @@ namespace orizzonte::node
             // by default. The parent of the `leaf` takes care of this if
             // desired.
 
-            FWD(then)(utility::call_ignoring_nothing(*this, FWD(input)));
+            utility::call_ignoring_nothing(
+                FWD(then), utility::call_ignoring_nothing(*this, FWD(input)));
         }
 
         static constexpr std::size_t cleanup_count() noexcept

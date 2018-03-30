@@ -4,7 +4,5 @@
 
 #pragma once
 
-#include "./orizzonte/meta.hpp"
-#include "./orizzonte/node.hpp"
-#include "./orizzonte/utility.hpp"
-#include "./orizzonte/types.hpp"
+#include "./types/tuple.hpp"
+#include "./types/variant.hpp"

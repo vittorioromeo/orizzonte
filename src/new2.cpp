@@ -126,11 +126,11 @@ std::cout << "t6 start\n";
     // constexpr auto count = total.count(...);
     //
     // total.execute(scheduler, ou::nothing_v,
-    //     [&](boost::variant<int>) { l.count_down(); },
+    //     [&](variant<int>) { l.count_down(); },
     //     [&]{ /* finalizer */ });
 
     total.execute(scheduler, ou::nothing_v,
-        [&](boost::variant<int>) { l.count_down(); });
+        [&](variant<int>) { l.count_down(); });
 
     l.wait();
     }
@@ -257,10 +257,10 @@ void t9()
     auto a0 = any{move(s0), move(s1), move(s2)};
     auto a1 = all{move(s3), move(s4)};
 
-    auto top0 = seq{move(a0), leaf{in<boost::variant<int, int, int>>,
+    auto top0 = seq{move(a0), leaf{in<variant<int, int, int>>,
                                   [](const auto&) { return -1; }}};
 
-    auto top1 = seq{move(a1), leaf{in<std::tuple<int, int>>, [](const auto&) {
+    auto top1 = seq{move(a1), leaf{in<tuple<int, int>>, [](const auto&) {
                                        // cout << std::get<0>(t) << ", " <<
                                        // std::get<1>(t) << '\n';
                                        return -1;

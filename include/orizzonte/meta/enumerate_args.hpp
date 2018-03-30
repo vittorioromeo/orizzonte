@@ -7,6 +7,7 @@
 #include "../utility/fwd.hpp"
 #include "./constant.hpp"
 #include "./sequence.hpp"
+#include "./type_wrapper.hpp"
 
 namespace orizzonte::meta
 {
@@ -29,5 +30,12 @@ namespace orizzonte::meta
     {
         // C++2a: use a lambda here.
         detail::enumerate_args_impl(sequence_for_v<Ts...>, FWD(f), FWD(xs)...);
+    }
+
+    // TODO:
+    template <typename... Ts, typename F>
+    void enumerate_types(F&& f)
+    {
+        return enumerate_args(FWD(f), t<Ts>...);
     }
 }

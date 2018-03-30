@@ -33,6 +33,10 @@ struct S
 using namespace orizzonte::node;
 using orizzonte::utility::sync_execute;
 
+using orizzonte::tuple;
+using orizzonte::variant;
+using orizzonte::get;
+
 void t0()
 {
     auto graph = leaf{[] { return 42; }};
@@ -166,12 +170,12 @@ void t9()
         seq{
             any{leaf{[] { return 0; }},                      //
                 leaf{[] { return 1; }}},                     //
-            leaf{[](boost::variant<int, int>) { return 2; }} //
+            leaf{[](variant<int, int>) { return 2; }} //
         },
         seq{
             any{leaf{[] { return 0; }},                      //
                 leaf{[] { return 1; }}},                     //
-            leaf{[](boost::variant<int, int>) { return 2; }} //
+            leaf{[](variant<int, int>) { return 2; }} //
         }};
 
     sync_execute(S{}, graph, [](auto r) {
@@ -203,7 +207,7 @@ void t61()
         orizzonte::utility::int_latch l{count + 1};
 
         total.execute(scheduler, ou::nothing_v,           //
-            [&](boost::variant<int>) { l.count_down(); }, //
+            [&](variant<int>) { l.count_down(); }, //
             [&] { /*std::cout << "cd\n";*/
                 l.count_down();
             });
@@ -224,38 +228,71 @@ void do_test(const char* name, F&& f)
     std::cout << name << " end\n";
 }
 
-#include <string>
 #include <iostream>
+#include <string>
+
+struct MO
+{
+    MO() = default;
+
+    MO(const MO&) = delete;
+    MO& operator=(const MO&) = delete;
+
+    MO(MO&&) = default;
+    MO& operator=(MO&&) = default;
+};
+
 
 int main()
 {
+    {
+        auto graph = leaf{[] { return MO{}; }};
+        sync_execute(S{}, graph, [](MO) {});
+    }
+
+    {
+        auto graph = seq{leaf{[] { return MO{}; }}, leaf{[](MO) {}}};
+        sync_execute(S{}, graph, []() {});
+    }
+
+    {
+        auto graph = all{leaf{[] { return MO{}; }}, leaf{[] { return MO{}; }}};
+        sync_execute(S{}, graph, [](tuple<MO, MO>) {});
+    }
+
+    {
+        auto graph = any{leaf{[] { return MO{}; }}, leaf{[] { return MO{}; }}};
+        sync_execute(S{}, graph, [](variant<MO, MO>) {});
+    }
+
+    return 0;
+
+
+    /*
     auto graph = seq{
-        any{leaf{[]{ return "hello"; }},
-            leaf{[]{ return "goodbye"; }}},
-        leaf{[](boost::variant<const char*, const char*> x) {
-            return apply_visitor([](std::string y){ return y + " world"; }, x);
-        }}
-    };
+        any{leaf{[] { return "hello"; }}, leaf{[] { return "goodbye"; }}},
+        leaf{[](variant<const char*, const char*> x) {
+            return apply_visitor([](std::string y) { return y + " world"; }, x);
+        }}};
 
-    sync_execute(S{}, graph, [](auto r) {
-        std::cout << r << '\n';
-    });
-/*
-    auto graph = any{//
-        seq{
-            any{leaf{[] { return download("data.com/0"); }}, //
-                leaf{[] { return download("data.com/0"); }}},                     //
-            leaf{[](boost::variant<int, int>) { return 2; }} //
-        },
-        seq{
-            any{leaf{[] { return 0; }},                      //
-                leaf{[] { return 1; }}},                     //
-            leaf{[](boost::variant<int, int>) { return 2; }} //
-        }};
+    sync_execute(S{}, graph, [](auto r) { std::cout << r << '\n'; });
+    */
+    /*
+        auto graph = any{//
+            seq{
+                any{leaf{[] { return download("data.com/0"); }}, //
+                    leaf{[] { return download("data.com/0"); }}}, //
+                leaf{[](variant<int, int>) { return 2; }} //
+            },
+            seq{
+                any{leaf{[] { return 0; }},                      //
+                    leaf{[] { return 1; }}},                     //
+                leaf{[](variant<int, int>) { return 2; }} //
+            }};
 
-    sync_execute(S{}, graph, [](auto r) {
-        ENSURE(apply_visitor([](auto y) { return y == 2; }, r));
-    });*/
+        sync_execute(S{}, graph, [](auto r) {
+            ENSURE(apply_visitor([](auto y) { return y == 2; }, r));
+        });*/
 
 
 #define DO_T(n) do_test("t" #n, [] { t##n(); })
