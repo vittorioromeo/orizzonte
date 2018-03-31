@@ -18,8 +18,8 @@ struct S
 };
 
 using namespace orizzonte::node;
+using orizzonte::get;
 using orizzonte::utility::sync_execute;
-
 
 void t0()
 {
