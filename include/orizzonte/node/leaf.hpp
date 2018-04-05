@@ -7,6 +7,7 @@
 #include "../utility/noop.hpp"
 #include "../utility/nothing.hpp"
 #include "./helper.hpp"
+#include "./seq.hpp"
 #include <type_traits>
 
 namespace orizzonte::node
@@ -35,14 +36,17 @@ namespace orizzonte::node
             // by default. The parent of the `leaf` takes care of this if
             // desired.
 
-            utility::call_ignoring_nothing(
-                FWD(then), utility::call_ignoring_nothing(*this, FWD(input)));
+            FWD(then)(utility::call_ignoring_nothing(*this, FWD(input)));
         }
 
         static constexpr std::size_t cleanup_count() noexcept
         {
             return 0;
         }
+
+        // TODO:
+        template <typename X>
+        auto then(X&& x);
     };
 
     template <typename R, typename Arg>

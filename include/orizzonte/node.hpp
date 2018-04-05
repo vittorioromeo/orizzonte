@@ -9,3 +9,5 @@
 #include "./node/helper.hpp"
 #include "./node/leaf.hpp"
 #include "./node/seq.hpp"
+
+#include "./node/then.inl"

@@ -47,5 +47,9 @@ namespace orizzonte::node
         {
             return A::cleanup_count() + B::cleanup_count();
         }
+
+        // TODO:
+        template <typename X>
+        auto then(X&& x);
     };
 }

@@ -7,6 +7,7 @@
 #include "../meta/type_wrapper.hpp"
 #include "../utility/nothing.hpp"
 #include <boost/callable_traits.hpp>
+#include <experimental/type_traits>
 #include <utility>
 
 namespace orizzonte::node::detail
@@ -54,6 +55,18 @@ namespace orizzonte::node::detail
     template <typename F>
     using first_arg_t =
         typename first_arg_impl<boost::callable_traits::args_t<F>>::type;
+
+    namespace detail
+    {
+        template <typename T>
+        using is_executable_impl = decltype(std::declval<T&>().execute(
+            std::declval<int&>(), std::declval<int&&>(), std::declval<int&&>(),
+            std::declval<int&&>()));
+    }
+
+    template <typename T>
+    using is_executable =
+        std::experimental::is_detected<detail::is_executable_impl, T>;
 }
 
 namespace orizzonte::node
