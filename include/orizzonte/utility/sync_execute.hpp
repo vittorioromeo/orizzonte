@@ -20,8 +20,8 @@ namespace orizzonte::utility
 
         graph.execute(scheduler, nothing_v,
             [&](auto&&... res) {
-                then(FWD(res)...);
-                // call_ignoring_nothing(then, FWD(res)...);
+                // then(FWD(res)...);
+                call_ignoring_nothing(then, FWD(res)...);
                 l.count_down();
             },
             [&] { l.count_down(); });
