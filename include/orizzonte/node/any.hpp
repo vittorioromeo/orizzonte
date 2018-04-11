@@ -31,7 +31,7 @@ namespace orizzonte::node
             template <typename Input>
             shared_state(Input&& input) : _input{FWD(input)}
             {
-                _left.store(sizeof...(Fs));
+                _left.store(sizeof...(Fs), std::memory_order_release);
             }
         };
 
@@ -59,7 +59,7 @@ namespace orizzonte::node
                                        cleanup /* TODO: fwd capture */] {
                     f.execute(scheduler, _state->_input,
                         [this, then, cleanup](auto&& out) {
-                            const auto r = _state->_left.fetch_sub(1);
+                            const auto r = _state->_left.fetch_sub(1, std::memory_order_acq_rel);
                             if(r == sizeof...(Fs))
                             {
                                 _values = FWD(out);

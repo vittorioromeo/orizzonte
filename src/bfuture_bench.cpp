@@ -142,6 +142,55 @@ void b1_then(int d)
 }
 
 /*
+    (A) -> (B) -> (C) -> (D) -> (E) -> (F) -> (G) -> (H)
+*/
+void b1_then_more(int d)
+{
+    bench(std::to_string(d) + "\tus - tmor - boostfutu", [&] {
+        auto f = make_bf<int>([&] {
+            sleepus(d);
+            return 0;
+        }).then(boost::launch::async, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::async, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::async, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::async, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::async, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::async, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::async, [&](auto x) { return x.get() + 1; });
+
+        ENSURE(f.get() == 7);
+    });
+
+    bench(std::to_string(d) + "\tus - tmor - bfutdefer", [&] {
+        auto f = make_bf<int>([&] {
+            sleepus(d);
+            return 0;
+        }).then(boost::launch::deferred, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::deferred, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::deferred, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::deferred, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::deferred, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::deferred, [&](auto x) { return x.get() + 1; })
+          .then(boost::launch::deferred, [&](auto x) { return x.get() + 1; });
+
+        ENSURE(f.get() == 7);
+    });
+
+    bench(std::to_string(d) + "\tus - tmor - orizzonte", [&] {
+        auto f = leaf{[&]{ sleepus(d); return 0; }}
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; });
+
+        sync_execute(S{}, f, [](int x) { ENSURE(x == 7); });
+    });
+}
+
+/*
            -> (B0) \
          /          \
        -> (B1) -----> (C)
@@ -274,8 +323,9 @@ void b3_whenany(int d)
 
 int main()
 {
-    with_ns(b0_single_node);
-    with_ns(b1_then);
+//    with_ns(b0_single_node);
+  //  with_ns(b1_then);
+    with_ns(b1_then_more);
     with_ns(b2_whenall);
     with_ns(b3_whenany);
 }

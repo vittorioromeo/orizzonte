@@ -265,8 +265,6 @@ int main()
         sync_execute(S{}, graph, [](variant<MO, MO>) {});
     }
 
-    return 0;
-
 
     /*
     auto graph = seq{
