@@ -25,7 +25,15 @@ struct S
     void operator()(F&& f)
     {
         std::thread{std::move(f)}.detach();
-        // pool.submit(std::move(f));
+    }
+};
+
+struct P
+{
+    template <typename F>
+    void operator()(F&& f)
+    {
+        pool.submit(std::move(f));
     }
 };
 
@@ -110,6 +118,14 @@ void b0_single_node(int d)
         }};
         sync_execute(S{}, f, [](int x) { ENSURE(x == 42); });
     });
+
+    bench("sngl_orizzpool", std::to_string(d) + "\tus - sngl - orizzpool", [&] {
+        auto f = leaf{[&] {
+            sleepus(d);
+            return 42;
+        }};
+        sync_execute(P{}, f, [](int x) { ENSURE(x == 42); });
+    });
 }
 
 /*
@@ -141,6 +157,17 @@ void b1_then(int d)
             leaf{[&](int x) { return x + 1; }}};
 
         sync_execute(S{}, f, [](int x) { ENSURE(x == 44); });
+    });
+
+    bench("then_orizzpool", std::to_string(d) + "\tus - then - orizzpool", [&] {
+        auto f = seq{seq{leaf{[&] {
+                             sleepus(d);
+                             return 42;
+                         }},
+                         leaf{[&](int x) { return x + 1; }}},
+            leaf{[&](int x) { return x + 1; }}};
+
+        sync_execute(P{}, f, [](int x) { ENSURE(x == 44); });
     });
 }
 
@@ -190,6 +217,19 @@ void b1_then_more(int d)
             .then([&](int x) { return x + 1; });
 
         sync_execute(S{}, f, [](int x) { ENSURE(x == 7); });
+    });
+
+    bench("tmor_orizzpool", std::to_string(d) + "\tus - tmor - orizzpool", [&] {
+        auto f = leaf{[&]{ sleepus(d); return 0; }}
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; })
+            .then([&](int x) { return x + 1; });
+
+        sync_execute(P{}, f, [](int x) { ENSURE(x == 7); });
     });
 }
 
@@ -255,6 +295,31 @@ void b2_whenall(int d)
             leaf{[&](int x) { return x + 2; }}};
 
         sync_execute(S{}, f, [](int x) { ENSURE(x == 44); });
+    });
+
+    bench("wall_orizzpool", std::to_string(d) + "\tus - wall - orizzpool", [&] {
+        auto f = seq{seq{all{leaf{[&] {
+                                 sleepus(d);
+                                 return 0;
+                             }},
+                             leaf{[&] {
+                                 sleepus(d);
+                                 return 1;
+                             }},
+                             leaf{[&] {
+                                 sleepus(d);
+                                 return 2;
+                             }}},
+                         leaf{[&](ou::cache_aligned_tuple<int, int, int> r) {
+                             ENSURE(ou::get<0>(r) == 0);
+                             ENSURE(ou::get<1>(r) == 1);
+                             ENSURE(ou::get<2>(r) == 2);
+
+                             return 42;
+                         }}},
+            leaf{[&](int x) { return x + 2; }}};
+
+        sync_execute(P{}, f, [](int x) { ENSURE(x == 44); });
     });
 }
 
@@ -322,6 +387,118 @@ void b3_whenany(int d)
 
         sync_execute(S{}, f, [](int x) { ENSURE(x > 41); });
     });
+
+    bench("wany_orizzpool", std::to_string(d) + "\tus - wany - orizzpool", [&] {
+        auto f = seq{seq{any{leaf{[&] {
+                                 sleepus(d);
+                                 return 0;
+                             }},
+                             leaf{[&] {
+                                 sleepus(d);
+                                 return 1;
+                             }},
+                             leaf{[&] {
+                                 sleepus(d);
+                                 return 2;
+                             }}},
+                         leaf{[&](orizzonte::variant<int, int, int> r) {
+                             return 42 + boost::apply_visitor(
+                                             [](int x) { return x; }, r);
+                         }}},
+            leaf{[&](int x) { return x + 2; }}};
+
+        sync_execute(P{}, f, [](int x) { ENSURE(x > 41); });
+    });
+}
+
+/*
+           -> (B0) -> all(D0, D1, D2)   |
+         /                              |
+       -> (B1)                          |-----> (C)
+         \                              |
+          -> (B2)                       |
+*/
+void b4_complex(int d)
+{
+    bench("cplx_boostfutu", std::to_string(d) + "\tus - cplx - boostfutu", [&] {
+
+        auto b0 = make_bf<int>([&] { sleepus(d); return 0; })
+            .then(boost::launch::async, [](auto f){
+                f.get();
+                auto d0 = make_bf<int>([&] { return 0; });
+        auto d1 = make_bf<int>([&] { return 0; });
+        auto d2 = make_bf<int>([&] { return 0; });
+
+                boost::when_all(std::move(d0), std::move(d1), std::move(d2)).get();
+                return 0; });
+        auto b1 = make_bf<int>([&] { sleepus(d); return 1; });
+        auto b2 = make_bf<int>([&] { sleepus(d); return 2; });
+
+        auto b = boost::when_any(std::move(b0), std::move(b1), std::move(b2));
+        auto k = b.then([](auto x) {
+            auto r = x.get();
+            if(std::get<0>(r).is_ready())
+            {
+                return 42 + std::get<0>(r).get();
+            }
+            if(std::get<1>(r).is_ready())
+            {
+                return 42 + std::get<1>(r).get();
+            }
+            return 42 + std::get<2>(r).get();
+        });
+
+        auto f =
+            k.then(boost::launch::async, [&](auto x) { return x.get() + 2; });
+
+        ENSURE(f.get() > 41);
+    });
+
+    bench("cplx_orizzonte", std::to_string(d) + "\tus - cplx - orizzonte", [&] {
+        auto f = seq{seq{any{leaf{[&] { sleepus(d); return 0; }}
+                                .then(all{
+                                    leaf{[](int){ return 0; }},
+                                    leaf{[](int){ return 0; }},
+                                    leaf{[](int){ return 0; }}
+                                }),
+                             leaf{[&] { sleepus(d); return 1; }},
+                             leaf{[&] { sleepus(d); return 2; }}},
+                         leaf{[&](orizzonte::variant<orizzonte::tuple<int, int, int>, int, int> r) {
+                             return 42 + boost::apply_visitor(
+                                             [](auto x)
+                                             {
+                                                 if constexpr(std::is_same_v<decltype(x), int>){
+                                                    return x;
+                                                 } else { return 0; }
+                                                }, r);
+                         }}},
+            leaf{[&](int x) { return x + 2; }}};
+
+        sync_execute(S{}, f, [](int x) { ENSURE(x > 41); });
+    });
+
+    bench("cplx_orizzpool", std::to_string(d) + "\tus - cplx - orizzpool", [&] {
+        auto f = seq{seq{any{leaf{[&] { sleepus(d); return 0; }}
+                                .then(all{
+                                    leaf{[](int){ return 0; }},
+                                    leaf{[](int){ return 0; }},
+                                    leaf{[](int){ return 0; }}
+                                }),
+                             leaf{[&] { sleepus(d); return 1; }},
+                             leaf{[&] { sleepus(d); return 2; }}},
+                         leaf{[&](orizzonte::variant<orizzonte::tuple<int, int, int>, int, int> r) {
+                             return 42 + boost::apply_visitor(
+                                             [](auto x)
+                                             {
+                                                 if constexpr(std::is_same_v<decltype(x), int>){
+                                                    return x;
+                                                 } else { return 0; }
+                                                }, r);
+                         }}},
+            leaf{[&](int x) { return x + 2; }}};
+
+        sync_execute(P{}, f, [](int x) { ENSURE(x > 41); });
+    });
 }
 
 int main()
@@ -331,11 +508,18 @@ int main()
     with_ns(b1_then_more);
     with_ns(b2_whenall);
     with_ns(b3_whenany);
+    with_ns(b4_complex);
 
     for(const auto& [k, v] : g_results)
     {
         std::cout << k << " = [";
-        for(const auto& x : v) std::cout << x << ", ";
+
+        if(!v.empty())
+        {
+            std::cout << v.front();
+            for(int i = 1; i < (int)v.size(); ++i) { std::cout << ", " << v[i]; }
+        }
+
         std::cout << "]\n";
     }
 }

@@ -1,3 +1,3 @@
 #!/bin/bash
 FLAGS='-std=c++2a -g -W -Wall -Wextra -Wpedantic -I/home/vittorioromeo/OHWorkspace/orizzonte/include -lpthread -lboost_system -lboost_thread'
-clang++ $1 $FLAGS -Ofast -DNDEBUG -o "/tmp/$1.x" $4 && "/tmp/$1.x"
+clang++ $1 $FLAGS -march=native -Ofast -DNDEBUG -o "/tmp/$1.x" $4 && sudo nice -n 20 "/tmp/$1.x"
