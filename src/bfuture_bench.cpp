@@ -24,16 +24,17 @@ struct S
     template <typename F>
     void operator()(F&& f)
     {
-        // std::thread{std::move(f)}.detach();
-        pool.submit(std::move(f));
+        std::thread{std::move(f)}.detach();
+        // pool.submit(std::move(f));
     }
 };
 
+std::map<std::string, std::vector<double>> g_results;
 
 using hr_clock = std::chrono::high_resolution_clock;
 
 template <typename TF>
-void bench(const std::string& title, TF&& f)
+void bench(const std::string& id, const std::string& title, TF&& f)
 {
     constexpr int times = 1000;
     double acc = 0;
@@ -52,7 +53,9 @@ void bench(const std::string& title, TF&& f)
         acc += cnt;
     }
 
-    std::cout << title << " | " << ((acc / times) / 1000.0) << " ms\n";
+    const auto x_ms = ((acc / times) / 1000.0);
+    g_results[id].emplace_back(x_ms);
+    std::cout << title << " | " << x_ms << " ms\n";
 }
 
 #define ENSURE(...)       \
@@ -92,7 +95,7 @@ void with_ns(F&& f)
 */
 void b0_single_node(int d)
 {
-    bench(std::to_string(d) + "\tus - sngl - boostfutu", [&] {
+    bench("sngl_boostfutu", std::to_string(d) + "\tus - sngl - boostfutu", [&] {
         auto f = make_bf<int>([&] {
             sleepus(d);
             return 42;
@@ -100,7 +103,7 @@ void b0_single_node(int d)
         ENSURE(f.get() == 42);
     });
 
-    bench(std::to_string(d) + "\tus - sngl - orizzonte", [&] {
+    bench("sngl_orizzonte", std::to_string(d) + "\tus - sngl - orizzonte", [&] {
         auto f = leaf{[&] {
             sleepus(d);
             return 42;
@@ -114,7 +117,7 @@ void b0_single_node(int d)
 */
 void b1_then(int d)
 {
-    bench(std::to_string(d) + "\tus - then - boostfutu", [&] {
+    bench("then_boostfutu", std::to_string(d) + "\tus - then - boostfutu", [&] {
         auto g0 = make_bf<int>([&] {
             sleepus(d);
             return 42;
@@ -129,7 +132,7 @@ void b1_then(int d)
         ENSURE(f.get() == 44);
     });
 
-    bench(std::to_string(d) + "\tus - then - orizzonte", [&] {
+    bench("then_orizzonte", std::to_string(d) + "\tus - then - orizzonte", [&] {
         auto f = seq{seq{leaf{[&] {
                              sleepus(d);
                              return 42;
@@ -146,7 +149,7 @@ void b1_then(int d)
 */
 void b1_then_more(int d)
 {
-    bench(std::to_string(d) + "\tus - tmor - boostfutu", [&] {
+    bench("tmor_boostfutu", std::to_string(d) + "\tus - tmor - boostfutu", [&] {
         auto f = make_bf<int>([&] {
             sleepus(d);
             return 0;
@@ -161,7 +164,7 @@ void b1_then_more(int d)
         ENSURE(f.get() == 7);
     });
 
-    bench(std::to_string(d) + "\tus - tmor - bfutdefer", [&] {
+    bench("tmor_bfutdefer", std::to_string(d) + "\tus - tmor - bfutdefer", [&] {
         auto f = make_bf<int>([&] {
             sleepus(d);
             return 0;
@@ -176,7 +179,7 @@ void b1_then_more(int d)
         ENSURE(f.get() == 7);
     });
 
-    bench(std::to_string(d) + "\tus - tmor - orizzonte", [&] {
+    bench("tmor_orizzonte", std::to_string(d) + "\tus - tmor - orizzonte", [&] {
         auto f = leaf{[&]{ sleepus(d); return 0; }}
             .then([&](int x) { return x + 1; })
             .then([&](int x) { return x + 1; })
@@ -199,7 +202,7 @@ void b1_then_more(int d)
 */
 void b2_whenall(int d)
 {
-    bench(std::to_string(d) + "\tus - wall - boostfutu", [&] {
+    bench("wall_boostfutu", std::to_string(d) + "\tus - wall - boostfutu", [&] {
         auto b0 = make_bf<int>([&] {
             sleepus(d);
             return 0;
@@ -229,7 +232,7 @@ void b2_whenall(int d)
         ENSURE(f.get() == 44);
     });
 
-    bench(std::to_string(d) + "\tus - wall - orizzonte", [&] {
+    bench("wall_orizzonte", std::to_string(d) + "\tus - wall - orizzonte", [&] {
         auto f = seq{seq{all{leaf{[&] {
                                  sleepus(d);
                                  return 0;
@@ -264,7 +267,7 @@ void b2_whenall(int d)
 */
 void b3_whenany(int d)
 {
-    bench(std::to_string(d) + "\tus - wany - boostfutu", [&] {
+    bench("wany_boostfutu", std::to_string(d) + "\tus - wany - boostfutu", [&] {
         auto b0 = make_bf<int>([&] {
             sleepus(d);
             return 0;
@@ -298,7 +301,7 @@ void b3_whenany(int d)
         ENSURE(f.get() > 41);
     });
 
-    bench(std::to_string(d) + "\tus - wany - orizzonte", [&] {
+    bench("wany_orizzonte", std::to_string(d) + "\tus - wany - orizzonte", [&] {
         auto f = seq{seq{any{leaf{[&] {
                                  sleepus(d);
                                  return 0;
@@ -323,9 +326,16 @@ void b3_whenany(int d)
 
 int main()
 {
-//    with_ns(b0_single_node);
-  //  with_ns(b1_then);
+    with_ns(b0_single_node);
+    with_ns(b1_then);
     with_ns(b1_then_more);
     with_ns(b2_whenall);
     with_ns(b3_whenany);
+
+    for(const auto& [k, v] : g_results)
+    {
+        std::cout << k << " = [";
+        for(const auto& x : v) std::cout << x << ", ";
+        std::cout << "]\n";
+    }
 }
