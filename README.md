@@ -4,13 +4,10 @@
 
 [![stability][badge.stability]][stability]
 [![license][badge.license]][license]
-[![gratipay][badge.gratipay]][gratipay]
 ![badge.cpp](https://img.shields.io/badge/c++-17-ff69b4.svg?style=flat-square)
 
 [badge.stability]: https://img.shields.io/badge/stability-experimental-orange.svg?style=flat-square
 [badge.license]: http://img.shields.io/badge/license-mit-blue.svg?style=flat-square
-[badge.gratipay]: https://img.shields.io/gratipay/user/SuperV1234.svg?style=flat-square
 
 [stability]: http://github.com/badges/stability-badges
 [license]: https://github.com/SuperV1234/scelta/blob/master/LICENSE
-[gratipay]: https://gratipay.com/~SuperV1234/
