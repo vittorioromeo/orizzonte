@@ -9,6 +9,7 @@
 
 namespace orizzonte::meta
 {
+    // C++2a: alias/derive from `type_identity`.
     /// @brief Empty class that "stores" the type `T`.
     template <typename T>
     struct type_wrapper

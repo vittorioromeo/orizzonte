@@ -60,7 +60,8 @@ namespace orizzonte::node
                         [this, then](auto&& out) {
                             utility::get<decltype(i){}>(_values) = FWD(out);
 
-                            if(_state->_left.fetch_sub(1, std::memory_order_acq_rel) == 1)
+                            if(_state->_left.fetch_sub(
+                                   1, std::memory_order_acq_rel) == 1)
                             {
                                 _state.destroy();
                                 then(std::move(_values));

@@ -53,6 +53,6 @@ namespace orizzonte::node
     leaf(R (*)(Arg))->leaf<Arg, R (*)(Arg)>;
 
     // TODO: callable_traits
-    template <typename F, typename S = decltype(&std::decay_t<F>::operator())>
-    leaf(F &&)->leaf<detail::first_arg_t<S>, std::decay_t<F>>;
+    template <typename F>
+    leaf(F)->leaf<detail::first_arg_t<decltype(&F::operator())>, F>;
 }

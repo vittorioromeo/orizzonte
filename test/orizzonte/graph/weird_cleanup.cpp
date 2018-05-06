@@ -24,6 +24,8 @@ using orizzonte::utility::sync_execute;
 
 TEST_MAIN()
 {
+    namespace ou = orizzonte::utility;
+
     auto graph =
             any
             {
@@ -34,7 +36,7 @@ TEST_MAIN()
                         seq{leaf{[]{ std::cout << "B"; }}, leaf{[]{ std::cout << "E"; }}},
                         leaf{[]{ std::cout << "A"; }}
                     },
-                    leaf{[](variant<ou::nothing, ou::nothing>){ std::cout << "D"; }}
+                    leaf{[](orizzonte::variant<ou::nothing, ou::nothing>){ std::cout << "D"; }}
                 },
                 leaf{[]{ std::cout << "C"; }}
             };
