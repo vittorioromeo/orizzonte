@@ -1,3 +1,4 @@
+buildcl
 .clang-format
 buildgcc
 callgrind.*
