@@ -7,6 +7,7 @@
 #include "../meta/enumerate_args.hpp"
 #include "../types/variant.hpp"
 #include "../utility/aligned_storage.hpp"
+#include "../utility/cache_aligned_tuple.hpp"
 #include "./helper.hpp"
 #include <atomic>
 #include <boost/variant.hpp>
